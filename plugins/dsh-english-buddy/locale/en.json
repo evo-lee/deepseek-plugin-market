@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "English prompt coach",
+    "description": "Corrects your prompt, or restates a Chinese one in English, before the model sees it; a pill under the composer shows what changed.",
+    "detail": "docs/DETAIL.en.md"
+  }
+}

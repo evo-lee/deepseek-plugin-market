@@ -1,0 +1,12 @@
+{
+  "name": "deepseek-plugin-market",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "A DeepSeek Harness plugin index plus the plugin sources it lists",
+  "scripts": {
+    "index": "node scripts/build-index.mjs",
+    "test": "node plugins/dsh-english-buddy/test/coach.test.mjs && node plugins/dsh-english-buddy/test/store.test.mjs && node plugins/dsh-deepseek-meter/test/state.test.mjs"
+  },
+  "license": "ISC"
+}

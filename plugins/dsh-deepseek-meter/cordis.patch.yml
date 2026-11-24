@@ -1,0 +1,3 @@
+- insert:
+    - id: deepseek-meter
+      name: 'dsh-deepseek-meter'

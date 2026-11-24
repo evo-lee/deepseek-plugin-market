@@ -1,0 +1,23 @@
+- insert:
+    - id: english-buddy
+      name: 'dsh-english-buddy'
+      config:
+        # automatic: coach every eligible prompt. onDemand: only `::` prompts.
+        mode: automatic
+        # rewrite: the model sees the English version only.
+        # original: keep the user's text and append the coaching as context.
+        authoritative: rewrite
+        strictness: standard
+        # auto: Chinese (and other non-English) becomes English. off: leave it alone.
+        translate: auto
+        # Prefix that sends a prompt through untouched, keeping it in Chinese.
+        escapePrefix: ';;'
+        provider: null
+        model: deepseek-flash
+        timeoutMs: 4000
+        maxInputChars: 4000
+        maxOutputTokens: 1600
+        sampleRate: 1
+        domainTerms: []
+        retentionDays: 120
+        hints: true

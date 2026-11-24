@@ -1,0 +1,43 @@
+{
+  "name": "dsh-english-buddy",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Corrects an English prompt, or restates a Chinese one in English, before the model sees it; reports what changed",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg"
+  },
+  "files": [
+    "index.js",
+    "pipeline.js",
+    "diagnostics.js",
+    "coach.js",
+    "store.js",
+    "client.js",
+    "cordis.patch.yml",
+    "locale/*.json",
+    "docs",
+    "icon.svg",
+    "test"
+  ],
+  "scripts": {
+    "test": "node test/coach.test.mjs && node test/store.test.mjs"
+  },
+  "license": "ISC",
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-conversation",
+        "@deepseek-ai/dsh-client-locale"
+      ]
+    }
+  }
+}

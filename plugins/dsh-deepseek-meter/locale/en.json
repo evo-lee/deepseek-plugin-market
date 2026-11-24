@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "DeepSeek balance and usage",
+    "description": "Shows your DeepSeek API wallet balance and today's token usage under the composer; click the pill to refresh.",
+    "detail": "docs/DETAIL.en.md"
+  }
+}

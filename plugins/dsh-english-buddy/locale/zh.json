@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "英文提示教练",
+    "description": "在模型看到之前，把你的 prompt 纠错或改写成英文；输入框下方显示今天改了什么。",
+    "detail": "docs/DETAIL.md"
+  }
+}
