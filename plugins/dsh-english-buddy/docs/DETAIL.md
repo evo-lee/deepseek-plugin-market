@@ -79,9 +79,22 @@
 
 出错时一律原样放行你的 prompt，但失败不会静默消失：每个降级路径都有稳定失败码，写进 Harness 日志，并在药丸悬停与 `/english-buddy-stats` 里显示最近一次。常见的有 `no-route`（没有可用的 DeepSeek 路由）、`prepare-failed`、`stream-failed`（请求中断）、`finish-max-tokens`（输出被截断）、`store-write-failed`（历史写不进盘）。插件自身逻辑出错记为 `listener-error`，并且永远不会影响这次提交。
 
+## 原文留在哪里
+
+改写只改变**模型看到的内容**，不改变**你看到的内容**。你的原话会挂在这条消息的 `source` 上——`source` 是日志里的显示元数据，模型永远看不到——渲染成气泡上方一行小字：
+
+```
+                                你写的 · 把这个文件的错误处理改一下，别吞异常
+                                          Revise the error handling in this file; …
+```
+
+所以：**模型只拿到英文，你仍然看得见自己写的中文。** 这一行不需要悬停、不占会话上下文、也不会因为刷新或重启消失（它跟消息一起存在会话日志里）。
+
+想要反过来（原文作为消息正文、英文作为附加上下文，模型两份都看到），把 `authoritative` 设成 `original`。
+
 ## 已知限制
 
-- 改写后 transcript 显示的是英文版，不是你原始的中文/错句；原文只保留在本地 JSONL 与药丸悬停里。想要「原文 + 英文版都给模型」，把 `authoritative` 改成 `original`。
+- 气泡上方那行原文最多显示 3 行，更长的部分在悬停 `title` 里；完整原文始终在本地 JSONL 里。
 - literal guard 是机械检查，挡不住「用词换了但意思变了」。发现改写丢信息时用 `;;` 旁路。
 - 每次提交多 0.8–2 秒延迟。可以用 `sampleRate`、`onDemand`、`timeoutMs` 收紧。
 - 命令在 action 描述里用的是连字符命名（`/english-buddy-today`），因为 DSH 的命令名不允许冒号。

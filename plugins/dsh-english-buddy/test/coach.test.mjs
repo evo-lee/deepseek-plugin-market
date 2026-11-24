@@ -287,7 +287,14 @@ test('corrects an English prompt and records notes', async () => {
   assert.equal(decision.kind, 'enter')
   assert.equal(decision.messages.length, 1)
   assert.equal(decision.messages[0].id, 'm1')
-  assert.deepEqual(decision.messages[0].source, { kind: 'user' })
+  // The source keeps identifying the message as a real prompt, and carries the
+  // user's own wording as display metadata the model never sees.
+  assert.equal(decision.messages[0].source.kind, 'user')
+  assert.deepEqual(decision.messages[0].source.englishBuddy, {
+    before: 'refactor the autentication modul, its got too many responsibilties',
+    after: 'Refactor the authentication module. It has too many responsibilities.',
+    mode: 'correct',
+  })
   assert.equal(decision.messages[0].content[0].text, 'Refactor the authentication module. It has too many responsibilities.')
   assert.equal(run.records.length, 1)
   assert.equal(run.records[0].mode, 'correct')
@@ -356,6 +363,7 @@ test('original strategy keeps the prompt and appends coaching context', async ()
   const decision = await run(messages)
   assert.equal(decision.messages.length, 2)
   assert.equal(decision.messages[0], messages[0])
+  assert.equal(decision.messages[0].source.englishBuddy, undefined)
   assert.equal(decision.messages[1].source.kind, 'english-buddy')
   assert.match(decision.messages[1].content[0].text, /original user prompt is authoritative/)
   assert.match(decision.messages[1].content[0].text, /Corrected prompt:/)

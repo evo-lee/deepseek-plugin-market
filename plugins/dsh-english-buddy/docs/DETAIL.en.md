@@ -77,9 +77,22 @@ Slash commands, `$skill` invocations, fragments under ten characters and three w
 
 A failure never blocks your prompt, and it never disappears silently: every degraded path has a stable failure code, is written to the Harness log, and the most recent one is shown in the pill tooltip and by `/english-buddy-stats`. The common ones are `no-route` (no DeepSeek route configured), `prepare-failed`, `stream-failed` (the request broke), `finish-max-tokens` (output truncated), and `store-write-failed` (history could not be written). A bug in the plugin itself is recorded as `listener-error` and still never affects the submission.
 
+## Where the original wording lives
+
+A rewrite changes **what the model sees**, not **what you see**. Your own text rides on the message `source` — durable display metadata the model never receives — and is rendered as one small line above the bubble:
+
+```
+                             You wrote · 把这个文件的错误处理改一下，别吞异常
+                                       Revise the error handling in this file; …
+```
+
+So the model gets English only, and you still see what you typed. The line needs no hover, costs no context, and survives a refresh or restart because it is stored with the message in the session log.
+
+The opposite arrangement — your text as the message, the English as extra context, both visible to the model — is `authoritative: original`.
+
 ## Known limitations
 
-- The transcript shows the English version, not your original wording; the original survives only in the local JSONL and the pill tooltip. Set `authoritative: original` to keep both in the transcript.
+- The line above the bubble clamps to three lines; the full original is in the hover title and always in the local JSONL.
 - The literal guard is mechanical: a rewrite that rewords without changing meaning is undetectable. Use `;;` when a prompt must not be touched.
 - Each submission costs 0.8–2 s. Tighten with `sampleRate`, `onDemand`, or a smaller `timeoutMs`.
 - Commands use hyphens (`/english-buddy-today`) because DSH command names do not allow a colon.

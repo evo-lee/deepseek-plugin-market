@@ -278,10 +278,20 @@ export function createPipeline(options) {
       })
 
       if (cfg.authoritative === 'original') {
+        // The user's text stays the message; the English is extra context.
         const text = `Coaching is supplementary. The original user prompt is authoritative; preserve literal code, names, constraints and intent.\n${contextText(plan.kind, parsed.text)}`
         return { ...decision, messages: appendContextMessage(batch, text, randomUUID()) }
       }
-      return { ...decision, messages: replaceText(batch, target.index, parsed.text) }
+      // Rewrite mode: the model sees English only, while the durable display
+      // annotation keeps the user's own wording visible in the transcript.
+      return {
+        ...decision,
+        messages: replaceText(batch, target.index, parsed.text, {
+          before: plan.text,
+          after: parsed.text,
+          mode: plan.kind,
+        }),
+      }
     } catch (error) {
       counters.failures += 1
       report('listener-error', error)

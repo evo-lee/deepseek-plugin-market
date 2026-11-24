@@ -19,6 +19,8 @@ window.__ModuleLoader__.load({
 
     const NS = 'englishBuddy'
     const SLOT = 'conversation.composer.dock'
+    /** Chain slot above one user bubble; owner supplies the durable message `source`. */
+    const SLOT_USER_BEFORE = 'conversation.chat.user.before'
     const STATE_URL = '/api/english-buddy/state'
     const DETAIL_ID = 'dsh-english-buddy-detail'
     const POLL_MS = 15_000
@@ -49,6 +51,7 @@ window.__ModuleLoader__.load({
         modeCorrect: '纠错',
         modeEnglish: '译为英文',
         modeRefine: '重写',
+        youWrote: '你写的',
         lastIssue: '最近一次降级',
         historyDegraded: '⚠ 历史读写失败，只统计本进程的记录',
       },
@@ -76,6 +79,7 @@ window.__ModuleLoader__.load({
         modeCorrect: 'fix',
         modeEnglish: 'restated',
         modeRefine: 'refined',
+        youWrote: 'You wrote',
         lastIssue: 'Last degraded path',
         historyDegraded: 'History could not be read or written; counting this process only',
       },
@@ -312,6 +316,49 @@ window.__ModuleLoader__.load({
         const options = { name: SLOT, id: 'english-buddy', order: 3 }
         if (localized) options.locale = NS
         ctx.slots.inject(SLOT, () => ctx.slots.register(options, () => h(BuddyPill, { t })))
+
+        // The rewrite keeps the user's own wording on the message source, which
+        // the model never sees. Render it above the bubble so the transcript
+        // still shows what was actually typed.
+        function OriginalNote(props) {
+          const note = props?.matched
+          if (note === null || typeof note !== 'object' || typeof note.before !== 'string' || note.before.length === 0) return null
+          return h('div', {
+            title: note.before,
+            style: {
+              alignSelf: 'flex-end',
+              maxWidth: '100%',
+              margin: '0 2px 4px',
+              color: 'var(--dsw-alias-label-caption)',
+              fontFamily: 'inherit',
+              fontSize: 'calc(var(--dsh-content-font-size-secondary, 13px) - 2px)',
+              lineHeight: 1.45,
+              textAlign: 'right',
+              whiteSpace: 'pre-wrap',
+              wordBreak: 'break-word',
+              overflow: 'hidden',
+              display: '-webkit-box',
+              WebkitLineClamp: 3,
+              WebkitBoxOrient: 'vertical',
+            },
+          }, `${t('youWrote')} · ${note.before}`)
+        }
+
+        try {
+          ctx.slots.inject(SLOT_USER_BEFORE, () => ctx.slots.register({
+            name: SLOT_USER_BEFORE,
+            id: 'english-buddy-original',
+            priority: 100,
+            select: owner => {
+              if (owner === null || typeof owner !== 'object' || owner.kind !== 'user') return null
+              const note = owner.source?.englishBuddy
+              if (note === null || typeof note !== 'object') return null
+              return typeof note.before === 'string' && note.before.length > 0 ? note : null
+            },
+          }, OriginalNote))
+        } catch {
+          // The annotation is a convenience; never let it cost the transcript.
+        }
       },
     }
   },

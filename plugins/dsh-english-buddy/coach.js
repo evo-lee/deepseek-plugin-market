@@ -623,10 +623,19 @@ export function pickCoachable(messages) {
 }
 
 /**
- * Replace the text blocks of one message, keeping identity, source, and every
- * non-text block (images, files) exactly where they were.
+ * Replace the text blocks of one message, keeping identity and every non-text
+ * block (images, files) exactly where they were.
+ *
+ * `note`, when given, rides on the message source as `source.englishBuddy`. The
+ * source is durable display metadata: the model never sees it, the transcript
+ * can, which is how the user's original wording stays visible after a rewrite.
+ *
+ * @param messages - the claimed pre-step batch.
+ * @param index - message to rewrite.
+ * @param text - the new model-facing text.
+ * @param note - display annotation for humans, e.g. `{ before, after, mode }`.
  */
-export function replaceText(messages, index, text) {
+export function replaceText(messages, index, text, note) {
   const next = messages.slice()
   const message = next[index]
   const content = []
@@ -642,7 +651,9 @@ export function replaceText(messages, index, text) {
     content.push(block)
   }
   if (!placed) content.unshift({ type: 'text', text })
-  next[index] = { ...message, content }
+  const rewritten = { ...message, content }
+  if (note !== undefined) rewritten.source = { ...message.source, englishBuddy: note }
+  next[index] = rewritten
   return next
 }
 
