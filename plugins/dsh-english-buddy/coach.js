@@ -486,9 +486,17 @@ function parseSourceTag(meta) {
 /**
  * Extract literals that a rewrite must carry over byte-for-byte.
  *
- * Covers backticked spans, numbers with units, paths, code identifiers, flags
- * and quoted text. This is a conservative mechanical floor: passing it does not
- * prove semantic equivalence, which is why a failure keeps the original.
+ * The rule is "backticks are literal, quotes are just quotation". Only
+ * mechanically checkable tokens are protected: backticked spans, numbers with
+ * units, paths and URLs, code identifiers, `--flags`, and dotted names. Quoted
+ * natural language is deliberately **not** protected, because quoting is how
+ * people talk about text and a translation legitimately reorders it — an
+ * earlier version treated every quoted span as a literal, so a prompt quoting
+ * four words was rejected whole and never coached.
+ *
+ * A user who needs a quoted string kept verbatim wraps it in backticks.
+ * Passing this floor does not prove semantic equivalence, which is why a
+ * failure keeps the original.
  *
  * @param text - the original prompt.
  * @returns the distinct literal strings, longest first.
@@ -506,11 +514,14 @@ export function literalsOf(text) {
   }
   for (const match of text.matchAll(/(?:^|[\s(（"'“「])((?:~|\.{0,2}\/)?[A-Za-z0-9_.-]+(?:\/[A-Za-z0-9_.-]+)+)/gu)) collect(match[1])
   for (const match of text.matchAll(/\b\d+\.[A-Za-z0-9]+\b/gu)) collect(match[0])
+  // Filenames by extension, so `package.json` is protected while a sentence-ending
+  // period or an abbreviation like `e.g` is not swept in.
+  for (const match of text.matchAll(/\b[\w-]+\.(?:json|jsonl|js|mjs|cjs|ts|tsx|jsx|md|css|html|yml|yaml|toml|ini|lock|sh|py|rs|go|java|rb|php|swift|sql|txt|svg|png|zst|log|env)\b/giu)) collect(match[0])
   for (const match of text.matchAll(/\b[a-z]\w*(?:_[a-z0-9]\w*)+\b/gu)) collect(match[0])
   for (const match of text.matchAll(/\b[a-z]+(?:[A-Z][a-z0-9]*)+\b/gu)) collect(match[0])
+  for (const match of text.matchAll(/\b[A-Z][a-z0-9]+(?:[A-Z][a-z0-9]*)+\b/gu)) collect(match[0])
   for (const match of text.matchAll(/\b[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+\b/gu)) collect(match[0])
   for (const match of text.matchAll(/\B--[a-z][a-z0-9-]*/gu)) collect(match[0])
-  for (const match of text.matchAll(/"[^"\n]{2,}"|'[^'\n]{2,}'|「[^」\n]{2,}」|“[^”\n]{2,}”/gu)) collect(match[0])
   return [...found].sort((a, b) => b.length - a.length)
 }
 

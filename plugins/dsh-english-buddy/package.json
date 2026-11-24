@@ -1,6 +1,6 @@
 {
   "name": "dsh-english-buddy",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "type": "module",
   "description": "Corrects an English prompt, or restates a Chinese one in English, before the model sees it; reports what changed",

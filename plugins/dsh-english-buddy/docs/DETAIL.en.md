@@ -18,7 +18,11 @@ Silence is the signal: the pill does not appear on a day with no rewrites.
 
 **Only errors are fixed.** A sentence that is grammatically correct, correctly punctuated, and clear on first read is left alone — even when a more elegant version exists. Nothing is shortened, reordered for flow, given new transitions, or moved into a different register. This keeps every recorded change tied to a real, learnable mistake instead of to the model's taste.
 
-**Every rewrite passes a literal guard.** Backticked spans, numbers with units, file paths, code identifiers, CLI flags and quoted text are extracted from your prompt; if any one of them is missing from the rewrite, the whole rewrite is discarded and your prompt is sent unchanged. It is a mechanical floor — it catches a dropped constraint, not a shifted meaning. `;;` is the final escape hatch.
+**Every rewrite passes a literal guard.** The guard extracts what is **mechanically checkable**: backticked spans, numbers with units, paths and URLs, filenames (`package.json`), code identifiers (`snake_case` / `camelCase` / `PascalCase` / `SCREAMING_CASE`), and `--flags`. If any one of them is missing from the rewrite, the whole rewrite is discarded and your prompt is sent unchanged.
+
+Quoted **natural language is not a literal** — a quotation is a quotation, and a rewrite legitimately reorders it. An earlier version protected every quoted span, so a prompt quoting four words failed as a whole and was never coached. **To pin text verbatim, wrap it in backticks**: `` `提交` `` is a hard constraint, `"提交"` is not.
+
+The guard is a mechanical floor — it catches a dropped constraint, not a shifted meaning. `;;` is the final escape hatch.
 
 ## Expressiveness hints
 

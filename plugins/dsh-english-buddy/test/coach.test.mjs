@@ -188,14 +188,65 @@ test('parseOutput unwraps one fence wrapping the whole rewrite', () => {
   assert.equal(parsed.text, 'rewritten text')
 })
 
-test('literal guard protects code, numbers, paths, identifiers, flags and quotes', () => {
-  const original = 'Do not rename `usr_id`, run `rm -rf`, or change the 250 ms limit in src/app/main.js; keep --dry-run and "提交" as-is.'
+// Set 1: the mechanical literals a rewrite must carry over byte-for-byte.
+test('literals: mechanical tokens must survive a rewrite', () => {
+  const original = 'Do not rename `usr_id`, run `rm -rf`, or change the 250 ms limit in src/app/main.js; '
+    + 'keep --dry-run, the /v1/messages path, package.json, MagicDNS, API_KEY and 1,024 rows.'
   const literals = literalsOf(original)
-  for (const expected of ['`usr_id`', '250 ms', 'src/app/main.js', '--dry-run', '"提交"']) {
+  for (const expected of [
+    '`usr_id`',
+    '`rm -rf`',
+    '250 ms',
+    'src/app/main.js',
+    '--dry-run',
+    '/v1/messages',
+    'package.json',
+    'MagicDNS',
+    'API_KEY',
+  ]) {
     assert.ok(literals.includes(expected), `missing literal ${expected} in ${JSON.stringify(literals)}`)
   }
   assert.equal(preservesLiterals(original, original), true)
-  assert.equal(preservesLiterals(original, 'Do not rename anything or change the limit.'), false)
+
+  const dropped = 'Do not rename anything, run any command, or change the limit in that file.'
+  assert.equal(preservesLiterals(original, dropped), false)
+
+  // Whole-token equality, not substring luck: dropping only the unit fails.
+  assert.equal(preservesLiterals('wait 250 ms', 'wait 250'), false)
+})
+
+// Set 2: quoted natural language is quotation, not a literal, so a rewrite may
+// change it. Protecting every quoted span made a prompt that quotes a few words
+// fail the guard as a whole and reach the model uncoached.
+test('literals: quoted prose may be rewritten', () => {
+  const english = 'He wrote "its got too many responsibilties" in the issue; fix that sentence.'
+  const englishLiterals = literalsOf(english)
+  assert.equal(englishLiterals.includes('"its got too many responsibilties"'), false)
+  assert.equal(preservesLiterals(english, 'He wrote "it has too many responsibilities" in the issue; fix that sentence.'), true)
+
+  const chinese = '把「先把缓存清掉，再重启服务」这段步骤写清楚，另外 “xxxxx” 只是占位符。'
+  assert.equal(literalsOf(chinese).some(literal => literal.includes('先把缓存清掉')), false)
+  assert.equal(preservesLiterals(chinese, 'Explain the steps "clear the cache first, then restart the service"; "xxxxx" is only a placeholder.'), true)
+
+  // Quoted code is still protected — by its own mechanical rule, not by quotes.
+  assert.equal(preservesLiterals('rename "usr_id" everywhere', 'rename the user identifier everywhere'), false)
+  assert.equal(preservesLiterals('rename "usr_id" everywhere', 'rename "usr_id" in every file'), true)
+
+  // A short quoted label may now be translated; backticks are the way to pin it.
+  assert.equal(preservesLiterals('按钮文案写「提交」', 'the button label should read "Submit"'), true)
+  assert.equal(preservesLiterals('按钮文案写 `提交`', 'the button label should read "Submit"'), false)
+})
+
+test('a prompt that quotes prose is still coached end to end', async () => {
+  const run = harness({
+    output: `Rewrite the issue title to "it has too many responsibilities".\n\n${SENTINEL}\n`,
+  })
+  const prompt = 'He wrote "its got too many responsibilties" in the issue; fix that sentence.'
+  const messages = [userMessage(prompt)]
+  const decision = await run(messages)
+  assert.equal(decision.messages[0].content[0].text, 'Rewrite the issue title to "it has too many responsibilities".')
+  assert.equal(run.counters.literalRejected, 0)
+  assert.equal(run.records[0].mode, 'correct')
 })
 
 test('wordDiff reports contiguous changed runs and nothing for equal text', () => {

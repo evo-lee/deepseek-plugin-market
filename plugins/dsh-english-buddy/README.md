@@ -9,7 +9,7 @@ DeepSeek Harness 插件：在模型看到你的 prompt 之前，用 `deepseek-fl
 ```
 
 - 走 `agent/pre-step`，在请求组装前替换消息文本；`prepareCall` 走本机已配好的 DeepSeek 路由，不需要第二个 API key。
-- 只修可追溯的错误，不为「更优雅」改写；改写一律过 literal guard（代码、数字、路径、标识符、引号内容逐字保留），不过就原文照发。
+- 只修可追溯的错误，不为「更优雅」改写；改写一律过 literal guard（反引号代码、数字+单位、路径、标识符、`--flag`、文件名逐字保留），不过就原文照发。**引号只是引用**：想让某段文字原样保留，用反引号把它包起来。
 - `::` 前缀进入重写模式（唯一允许扩写）；`;;` 前缀原样放行（需要保持中文时用）。
 - 当天没有改动时药丸不出现；`/english-buddy-today`、`/english-buddy-stats` 出报告。
 
