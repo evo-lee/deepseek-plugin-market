@@ -29,12 +29,12 @@
       "name": "dsh-english-buddy",
       "versions": [
         {
-          "version": "0.1.0",
-          "publishTimestamp": 1795499603,
+          "version": "0.1.1",
+          "publishTimestamp": 1795501164,
           "source": {
             "type": "git",
             "url": "https://github.com/evo-lee/deepseek-plugin-market",
-            "commit": "73b12f773fec95f757b42d1aeba1fcf6d2913d3c",
+            "commit": "d112a61b69d58b956541d743d5c7b295cd31a169",
             "path": "plugins/dsh-english-buddy"
           }
         }
@@ -61,11 +61,11 @@
       "versions": [
         {
           "version": "0.1.0",
-          "publishTimestamp": 1795499603,
+          "publishTimestamp": 1795501164,
           "source": {
             "type": "git",
             "url": "https://github.com/evo-lee/deepseek-plugin-market",
-            "commit": "73b12f773fec95f757b42d1aeba1fcf6d2913d3c",
+            "commit": "d112a61b69d58b956541d743d5c7b295cd31a169",
             "path": "plugins/dsh-deepseek-meter"
           }
         }
