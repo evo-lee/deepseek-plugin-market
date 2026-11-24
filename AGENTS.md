@@ -15,6 +15,10 @@ Three things in one repo:
    clds plugin it lists, `plugins/clds-english-buddy-for-claude/`. That plugin
    targets Claude Code running on DeepSeek through `clds`; it is not a DSH
    bundle and must not appear in `index.json`.
+4. **An Antigravity native plugin**, `plugins/agy-english-buddy/` (`plugin.json`,
+   `hooks.json`, Python stdlib scripts, `skills/`, offline `unittest` suite). It
+   is not a DSH bundle and must not have `dsh.bundle.patch` or appear in
+   `index.json`.
 
 The DSH index is generated from the DSH sources. It is never hand-edited.
 

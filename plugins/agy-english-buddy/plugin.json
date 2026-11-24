@@ -1,0 +1,11 @@
+{
+  "name": "english-buddy",
+  "displayName": "English Buddy",
+  "version": "1.0.0",
+  "description": "Silent English coach for non-native speakers: catches typos, grammar, and awkward phrasing in your English prompts, forwards clean English to the model, tracks error-rate trends, and provides today/stats/mistakes/drill/review/preview/config workflows.",
+  "suggestedPrompts": [
+    "Show my English Buddy report for today",
+    "Show my English Buddy stats and error-rate trend",
+    "Give me an English Buddy drill on my recurring mistakes"
+  ]
+}

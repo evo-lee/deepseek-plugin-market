@@ -1,0 +1,11 @@
+{
+  "english-buddy": {
+    "PreInvocation": [
+      {
+        "type": "command",
+        "command": "python3 ./scripts/check_prompt.py",
+        "timeout": 28
+      }
+    ]
+  }
+}

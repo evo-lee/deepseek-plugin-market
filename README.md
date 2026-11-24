@@ -12,10 +12,11 @@
 | [`dsh-english-buddy`](plugins/dsh-english-buddy/) | DSH | 在模型看到之前把 prompt 纠错或改写成英文（中文→英文、`::` 重写、`;;` 原样放行），输入框下方显示今天改了什么，`/english-buddy-today` 出日报 |
 | [`dsh-deepseek-meter`](plugins/dsh-deepseek-meter/) | DSH | 输入框下方显示 DeepSeek 账户余额与今日 token 用量，悬停看明细，点击刷新 |
 | [`clds-english-buddy-for-claude`](plugins/clds-english-buddy-for-claude/) | Claude Code | 在 clds/DeepSeek、clkc/Kimi Code、clki/Kimi 等 clai 启动器下纠错、翻译、`::` 精炼；复用当前 provider 的 Anthropic 兼容端点，不需要第二个 key；报表由脚本算，模型只展示 |
+| [`agy-english-buddy`](plugins/agy-english-buddy/) | Antigravity | Antigravity 原生插件：通过 `PreInvocation` Hook 复用 `gemini-4-hydrogen-low` 模型，实现英文纠错、中译英（`The user said:` 可见展示并转发给主 Agent）、错误率统计与全部 7 个工作流 |
 
-三个插件都是纯 JS、零运行时依赖。DSH 的两个只用 `node:*` 与 DSH 服务；Claude Code 插件只用 `node:*` 与 Claude Code 的 hook/命令接口。
+DSH 与 Claude Code 插件都是纯 JS、零运行时依赖；Antigravity 插件仅用 Python 标准库 + `agy` CLI。
 
-> `plugins/` 下可能同时有 DSH 插件和 Claude Code 插件。`scripts/build-index.mjs` 只索引带 `dsh.bundle.patch` 的目录；Claude Code 插件不会出现在 DSH 的 Discover 里。
+> `plugins/` 下同时收纳 DSH、Claude Code 和 Antigravity 插件。`scripts/build-index.mjs` 只索引带 `dsh.bundle.patch` 的目录；非 DSH 插件不会出现在 DSH 的 Discover 里。
 
 ## 目录结构
 
@@ -27,7 +28,8 @@
 ├── plugins/
 │   ├── dsh-english-buddy/      # DSH 插件，自带 README / docs / locale / icon / test
 │   ├── dsh-deepseek-meter/     # DSH 插件
-│   └── clds-english-buddy-for-claude/  # Claude Code 插件（clds/clkc/clki），不进 DSH 索引
+│   ├── clds-english-buddy-for-claude/  # Claude Code 插件（clds/clkc/clki），不进 DSH 索引
+│   └── agy-english-buddy/      # Antigravity 原生插件（PreInvocation + Skill），不进 DSH 索引
 ├── docs/PUBLISHING.md          # 发到 GitHub 的步骤
 ├── AGENTS.md                   # 给 AI 编码代理的仓库约定与 DSH 事实
 └── package.json                # 只有脚本入口，无依赖
@@ -59,6 +61,17 @@ CLAUDE_CONFIG_DIR="$PROFILE" \
 ```
 
 然后重启对应启动器，在会话里运行 `/clds-english-buddy-for-claude:doctor --probe` 验证。详见插件自己的 [README](plugins/clds-english-buddy-for-claude/README.md)。
+
+### Antigravity 插件安装
+
+复制到 Antigravity 全局插件目录，或使用 `agy plugin install`：
+
+```sh
+cp -R plugins/agy-english-buddy ~/.gemini/config/plugins/english-buddy
+# 或：agy plugin install ./plugins/agy-english-buddy
+```
+
+详见插件自己的 [README](plugins/agy-english-buddy/README.md)。
 
 ## 生成索引
 
