@@ -391,7 +391,10 @@ window.__ModuleLoader__.load({
           // received. Hiding it is what lets the bubble position show the user's own
           // wording; if the host row structure changes the rule stops matching and
           // both texts appear, which is the safe direction to fail.
-          h('style', null, '[data-english-buddy-orig] + * { display: none !important; }'),
+          // The chain outlet wraps entries in a `display: contents` anchor, so the
+          // bubble is the anchor's next sibling — not this element's. Scoped with
+          // :has() so rows without an annotation keep their own rendering.
+          h('style', null, '[data-slot="conversation.chat.user.before"]:has([data-english-buddy-orig]) + * { display: none !important; }'),
           h('div', {
             title: original,
             style: {
