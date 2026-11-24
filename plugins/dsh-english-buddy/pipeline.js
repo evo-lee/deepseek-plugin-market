@@ -290,6 +290,9 @@ export function createPipeline(options) {
           before: plan.text,
           after: parsed.text,
           mode: plan.kind,
+          // The bubble is hidden for a text-only prompt; a message that also
+          // carries images or files must keep the host's rendering intact.
+          withAttachments: batch[target.index].content.some(block => block?.type !== 'text'),
         }),
       }
     } catch (error) {

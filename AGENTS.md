@@ -6,27 +6,33 @@ Harness source and cost real debugging time.
 
 ## What this repository is
 
-Two things in one repo:
+Three things in one repo:
 
-1. **A plugin index** (`index.json`, DSH plugin-market `format: 1`) that makes
-   the plugins installable from **Plugins → Discover**.
-2. **The plugin sources** it lists, under `plugins/<package-name>/`.
+1. **A DSH plugin index** (`index.json`, DSH plugin-market `format: 1`) that
+   makes DSH plugins installable from **Plugins → Discover**.
+2. **The DSH plugin sources** it lists, under `plugins/<package-name>/`.
+3. **A Claude Code marketplace** (`.claude-plugin/marketplace.json`) and the
+   clds plugin it lists, `plugins/clds-english-buddy-for-claude/`. That plugin
+   targets Claude Code running on DeepSeek through `clds`; it is not a DSH
+   bundle and must not appear in `index.json`.
 
-The index is generated from the sources. It is never hand-edited.
+The DSH index is generated from the DSH sources. It is never hand-edited.
 
 ```
-index.json                 generated; do not edit by hand
-scripts/build-index.mjs    the only writer of index.json
-plugins/<name>/            one installable DSH bundle per directory
-docs/PUBLISHING.md         release steps
+index.json                    generated; do not edit by hand
+scripts/build-index.mjs       the only writer of index.json; skips non-DSH plugins
+plugins/<name>/               DSH bundles (dsh.bundle.patch) or the Claude Code plugin
+.claude-plugin/marketplace.json  Claude Code marketplace for clds
+docs/PUBLISHING.md            release steps
 ```
 
 ## Commands
 
 ```sh
 npm test                   # all plugin test suites, offline, no credentials
-npm run index              # regenerate index.json from plugins/* (needs a git remote)
-node plugins/dsh-english-buddy/test/coach.test.mjs   # one suite
+npm run index              # regenerate index.json from DSH plugins (needs a git remote)
+node plugins/dsh-english-buddy/test/coach.test.mjs   # one DSH suite
+node --test plugins/clds-english-buddy-for-claude/test/*.test.mjs  # Claude Code suite
 ```
 
 There is no build step and no runtime dependency. Everything is plain ESM
@@ -38,14 +44,18 @@ gate.
 1. **`index.json` is generated.** Change `scripts/build-index.mjs` or the plugin
    manifests, then regenerate. A hand-edited index will be overwritten and a
    stale one will install the wrong commit.
-2. **Every plugin stays installable on its own**, by directory (`dsh plugin add
-   ./plugins/<name>`) and by git path (`<repo>#<commit>&path:plugins/<name>`).
-   Never add a reference from a plugin to a sibling directory.
+2. **Every DSH plugin stays installable on its own**, by directory (`dsh plugin
+   add ./plugins/<name>`) and by git path
+   (`<repo>#<commit>&path:plugins/<name>`). Never add a reference from a plugin
+   to a sibling directory. The Claude Code plugin installs through
+   `.claude-plugin/marketplace.json` instead.
 3. **No runtime dependencies, no `@deepseek-ai/*` imports.** See the resolution
-   note below; both are load-bearing.
-4. **Every user-visible plugin carries `locale/{zh,en}.json`, `docs/DETAIL.md`,
-   `docs/DETAIL.en.md`, and `icon.svg`.** The index and the Plugins page are
-   incomplete without them; the build script inlines the icon from that file.
+   note below; both are load-bearing. The Claude Code plugin uses only `node:*`.
+4. **Every user-visible DSH plugin carries `locale/{zh,en}.json`,
+   `docs/DETAIL.md`, `docs/DETAIL.en.md`, and `icon.svg`.** The index and the
+   Plugins page are incomplete without them; the build script inlines the icon
+   from that file. The Claude Code plugin uses `.claude-plugin/plugin.json` and
+   a README instead.
 5. **Failures are handled, never swallowed.** A plugin that degrades must record
    a stable failure code through its reporter and expose it (status route,
    tooltip, command). `catch {}` with no reporting is a review blocker.
@@ -134,14 +144,36 @@ for await (const chunk of prepared.stream({
 - Log through `ctx.logger('name')` (`debug|info|warn|error`) and keep a bounded
   record for the status route. A silent `catch` is a bug.
 
-### Never port a Claude Code plugin verbatim
+### The clds Claude Code plugin
+
+`plugins/clds-english-buddy-for-claude/` is intentionally Claude Code format,
+not DSH: `.claude-plugin/plugin.json`, `hooks/hooks.json`, commands, skills,
+plain ESM scripts, and offline tests. Facts that cost debugging time:
+
+- clds runs with `CLAUDE_CONFIG_DIR=~/.claude-deepseek`,
+  `ANTHROPIC_BASE_URL=https://api.deepseek.com/anthropic`, and
+  `ANTHROPIC_AUTH_TOKEN=$DEEPSEEK_API_KEY`. It **unsets** `ANTHROPIC_API_KEY`.
+  A hook that only reads the API key reports "no credentials" and never coaches.
+- Never read the macOS keychain on a non-Anthropic endpoint. That would send an
+  Anthropic OAuth token to DeepSeek.
+- `UserPromptSubmit` cannot replace the prompt. Emit
+  `hookSpecificOutput.additionalContext` and `systemMessage`; the model sees the
+  typed text plus the corrected reading.
+- Slash commands can inject script output with an inline `!` command or a
+  fenced ```` ```! ```` block. Use that for reports and diagnostics; do not ask
+  the model to recompute JSONL statistics.
+- `build-index.mjs` requires `dsh.bundle.patch`, so this plugin is skipped by the
+  DSH index. Do not add that field to it.
+
+### Never port a Claude Code plugin verbatim into DSH
 
 Claude Code's `.claude-plugin` format, `UserPromptSubmit` hooks, slash commands
 and agents have no DSH equivalent to load. DSH bundles are npm/git packages with
 `dsh.bundle.patch`; the equivalents are `agent/pre-step`, `ctx.commands`,
-skills, and agent presets. Port behavior, not files.
+skills, and agent presets. Port behavior, not files. The reverse is also true:
+do not turn the clds plugin into a DSH bundle.
 
-## Adding a plugin
+## Adding a DSH plugin
 
 1. `plugins/<package-name>/` with `package.json` (`name` matching the directory,
    `type: "module"`, `dsh.bundle.patch`, optional `dsh.client`), `cordis.patch.yml`
@@ -150,6 +182,15 @@ skills, and agent presets. Port behavior, not files.
 2. Add the package name to `ORDER` and `CATEGORY` in `scripts/build-index.mjs`.
 3. `npm test`, then `npm run index`.
 4. Install it locally and verify the behavior, not just the install result.
+
+## Adding a Claude Code plugin
+
+1. `plugins/<name>/` with `.claude-plugin/plugin.json`, `package.json`
+   (`type: "module"`, no `dsh` field), `hooks/hooks.json`, commands/skills,
+   scripts, README, and offline tests.
+2. Add it to `.claude-plugin/marketplace.json`.
+3. `node --test plugins/<name>/test/*.test.mjs`, then install into
+   `~/.claude-deepseek` and verify the hook output and doctor report.
 
 ## Publishing
 

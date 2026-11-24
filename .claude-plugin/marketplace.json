@@ -1,0 +1,29 @@
+{
+  "name": "litang-deepseek-plugin-market",
+  "owner": {
+    "name": "litang"
+  },
+  "metadata": {
+    "description": "DeepSeek tools for Claude Code (clds) and DeepSeek Harness"
+  },
+  "plugins": [
+    {
+      "name": "clds-english-buddy-for-claude",
+      "source": "./plugins/clds-english-buddy-for-claude",
+      "description": "English coach for Claude Code running on DeepSeek via clds — corrects prompts, translates Chinese, refines :: prompts, and reports progress.",
+      "version": "0.1.0",
+      "author": {
+        "name": "litang"
+      },
+      "license": "ISC",
+      "keywords": [
+        "english",
+        "coaching",
+        "deepseek",
+        "clds",
+        "claude-code"
+      ],
+      "category": "developer-tools"
+    }
+  ]
+}

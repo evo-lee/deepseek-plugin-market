@@ -16,7 +16,7 @@ gh auth status            # 用 gh 建仓则需要登录；否则按下面手动
 cd deepseek-plugin-market
 git init -b main
 git add -A
-git commit -m "feat: english-buddy 与 deepseek-meter 两个插件 + 市场索引生成脚本"
+git commit -m "feat: DSH english-buddy/deepseek-meter + clds english-buddy + 市场索引"
 
 gh repo create deepseek-plugin-market --public --source . --remote origin --push
 # 不用 gh：
@@ -57,7 +57,7 @@ git push
 ## 5. 发新版本
 
 ```sh
-# 1) 改版本号（索引按 package.json 的 version 建条目）
+# 1) 改版本号（DSH 索引按 package.json 的 version 建条目）
 node -e "const f='plugins/dsh-english-buddy/package.json';const p=require('./'+f);p.version='0.1.1';require('fs').writeFileSync(f, JSON.stringify(p,null,2)+'\n')"
 npm test
 git add -A && git commit -m "chore(english-buddy): 0.1.1" && git push
@@ -67,10 +67,26 @@ npm run index
 git add index.json && git commit -m "chore: publish index" && git push
 ```
 
+## 6. Claude Code / clds 插件
+
+根目录的 `.claude-plugin/marketplace.json` 只列 `clds-english-buddy-for-claude`。它不走 DSH 索引，也不需要 `index.json`；推送后直接：
+
+```sh
+CLAUDE_CONFIG_DIR="$HOME/.claude-deepseek" \
+  claude plugin marketplace add <repo-url-or-local-path>
+
+CLAUDE_CONFIG_DIR="$HOME/.claude-deepseek" \
+  claude plugin install clds-english-buddy-for-claude@litang-deepseek-plugin-market
+```
+
+插件自身的版本在 `plugins/clds-english-buddy-for-claude/.claude-plugin/plugin.json` 与 `package.json` 里；发版时两处一起改。
+
 ## 上线前检查
 
-- [ ] `npm test` 全绿（离线，无凭据）
+- [ ] `npm test` 全绿（离线，无凭据），包括 `clds-english-buddy-for-claude` 的测试
 - [ ] `npm run index` 成功，`index.json` 里的 `commit` 等于 `git rev-parse HEAD` **之前**那次提交
-- [ ] 每个插件的 `locale/{zh,en}.json`、`docs/DETAIL{,.en}.md`、`icon.svg` 都在
+- [ ] `index.json` 只包含两个 DSH 插件，不包含 Claude Code 插件
+- [ ] 每个 DSH 插件的 `locale/{zh,en}.json`、`docs/DETAIL{,.en}.md`、`icon.svg` 都在
 - [ ] 仓库公开，`git+<url>#<commit>&path:plugins/<name>` 能拉到
-- [ ] 在干净 profile 里从 Discover 装一次，确认能装上、能跑
+- [ ] 在干净 profile 里从 Discover 装一次 DSH 插件，确认能装上、能跑
+- [ ] 在 `~/.claude-deepseek` 里装一次 clds 插件，运行 `doctor --probe` 和 `today`

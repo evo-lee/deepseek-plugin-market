@@ -294,6 +294,7 @@ test('corrects an English prompt and records notes', async () => {
     before: 'refactor the autentication modul, its got too many responsibilties',
     after: 'Refactor the authentication module. It has too many responsibilities.',
     mode: 'correct',
+    withAttachments: false,
   })
   assert.equal(decision.messages[0].content[0].text, 'Refactor the authentication module. It has too many responsibilities.')
   assert.equal(run.records.length, 1)
@@ -336,6 +337,19 @@ test('drops a rewrite that loses a protected literal', async () => {
   assert.equal(decision.messages, messages)
   assert.equal(run.counters.literalRejected, 1)
   assert.equal(run.records[0].mode, 'literal')
+})
+
+test('a message that carries attachments keeps the host bubble untouched', async () => {
+  const run = harness({ output: `Fixed text.\n\n${SENTINEL}\nits → it's (apostrophe)` })
+  const message = {
+    id: 'm1',
+    role: 'user',
+    source: { kind: 'user' },
+    content: [{ type: 'image', ref: 'a' }, { type: 'text', text: 'please fix the autentication modul' }],
+  }
+  const decision = await run([message])
+  assert.equal(decision.messages[0].source.englishBuddy.withAttachments, true)
+  assert.deepEqual(decision.messages[0].content.map(block => block.type), ['image', 'text'])
 })
 
 test('the escape prefix strips itself with no model call', async () => {

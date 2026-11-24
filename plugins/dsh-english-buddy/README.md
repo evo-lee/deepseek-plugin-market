@@ -68,7 +68,7 @@ node test/store.test.mjs   # JSONL、容错读取、汇总、保留期、报告�
 
 ## 已知限制
 
-- 模型只看到英文，你的原话以「你写的 · …」显示在气泡上方（存在消息 `source` 里，不进模型上下文）；要两者都给模型，把 `authoritative` 改成 `original`。
+- 模型只看到英文；气泡位置显示你的原话，英文收成小字 `The user said, "…"`（原话存在消息 `source` 里，不进模型上下文）。
 - literal guard 是机械检查，挡不住「换了词但意思变了」；这种时候用 `;;`。
 - 每次提交多 0.8–2 秒；可用 `sampleRate`、`onDemand`、`timeoutMs` 收紧。
 - 只移植了纠错/重述主干；上游的 `/review`、`/drill`、`writing-guide` 技能与批改子代理未包含。

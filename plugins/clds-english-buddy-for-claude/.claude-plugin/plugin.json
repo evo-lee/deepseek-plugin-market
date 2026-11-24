@@ -1,0 +1,29 @@
+{
+  "name": "clds-english-buddy-for-claude",
+  "version": "0.1.0",
+  "description": "English coach for Claude Code running on DeepSeek via clds — corrects prompts, translates Chinese, refines :: prompts, and reports progress using the same DeepSeek Anthropic-compatible endpoint.",
+  "author": {
+    "name": "litang"
+  },
+  "license": "ISC",
+  "keywords": [
+    "english",
+    "coaching",
+    "grammar",
+    "translation",
+    "deepseek",
+    "clds",
+    "claude-code"
+  ],
+  "skills": [
+    "./skills/english-buddy"
+  ],
+  "network": {
+    "hosts": [
+      "api.deepseek.com",
+      "api.anthropic.com",
+      "localhost",
+      "127.0.0.1"
+    ]
+  }
+}

@@ -79,25 +79,23 @@ A failure never blocks your prompt, and it never disappears silently: every degr
 
 ## Where the original wording lives
 
-A rewrite changes **what the model sees**, not **what you see**. Your own text rides on the message `source` — durable display metadata the model never receives — and is rendered as one small line above the bubble:
+A rewrite changes **what the model sees**, not **what you see**:
 
 ```
-                             You wrote · 把这个文件的错误处理改一下，别吞异常
-                                       Revise the error handling in this file; …
+┌─────────────────────────────────┐
+│  把这个文件的错误处理改一下，别吞异常   │   ← the bubble shows what you typed
+└─────────────────────────────────┘
+              The user said, "Revise the error handling in this file; …"   ← small line: what the model got
 ```
 
-So the model gets English only, and you still see what you typed. The line needs no hover, costs no context, and survives a refresh or restart because it is stored with the message in the session log.
+- Your text rides on the message `source` — durable display metadata the model never receives.
+- The host's English bubble is hidden by one sibling selector. If a host upgrade changes the row structure the rule stops matching and both texts show, which is the safe direction to fail.
+- A message carrying images or files is **not** hidden (that would take the attachments with it); it falls back to showing your text as a line above the bubble.
+- Hover the small line for the full English; `/english-buddy-today` and the local JSONL always hold before/after.
 
 The opposite arrangement — your text as the message, the English as extra context, both visible to the model — is `authoritative: original`.
 
 ## Known limitations
-
-- The line above the bubble clamps to three lines; the full original is in the hover title and always in the local JSONL.
-- The literal guard is mechanical: a rewrite that rewords without changing meaning is undetectable. Use `;;` when a prompt must not be touched.
-- Each submission costs 0.8–2 s. Tighten with `sampleRate`, `onDemand`, or a smaller `timeoutMs`.
-- Commands use hyphens (`/english-buddy-today`) because DSH command names do not allow a colon.
-- Only the correction/restatement spine is ported. The upstream `/review`, `/drill`, `writing-guide` skills, and the four review subagents are not.
-
 ## Relationship to upstream
 
 The mode split, the correction rules, the annotation format and the literal guard come from [`xiaolai/english-buddy-for-claude`](https://github.com/xiaolai/english-buddy-for-claude) (ISC). The implementation is rewritten against DeepSeek Harness's `agent/pre-step`, `ctx.llm`, slot and command interfaces; none of its Claude Code hook code is reused.

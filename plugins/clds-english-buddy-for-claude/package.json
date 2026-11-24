@@ -1,0 +1,14 @@
+{
+  "name": "clds-english-buddy-for-claude",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "English coach for Claude Code on DeepSeek via clds",
+  "engines": {
+    "node": ">=18.18.0"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.mjs"
+  },
+  "license": "ISC"
+}

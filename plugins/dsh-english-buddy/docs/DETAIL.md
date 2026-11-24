@@ -81,25 +81,23 @@
 
 ## 原文留在哪里
 
-改写只改变**模型看到的内容**，不改变**你看到的内容**。你的原话会挂在这条消息的 `source` 上——`source` 是日志里的显示元数据，模型永远看不到——渲染成气泡上方一行小字：
+改写只改变**模型看到的内容**，不改变**你看到的内容**：
 
 ```
-                                你写的 · 把这个文件的错误处理改一下，别吞异常
-                                          Revise the error handling in this file; …
+┌─────────────────────────────────┐
+│  把这个文件的错误处理改一下，别吞异常   │   ← 气泡位置显示你的原话
+└─────────────────────────────────┘
+              The user said, "Revise the error handling in this file; …"   ← 小字是模型拿到的英文
 ```
 
-所以：**模型只拿到英文，你仍然看得见自己写的中文。** 这一行不需要悬停、不占会话上下文、也不会因为刷新或重启消失（它跟消息一起存在会话日志里）。
+- 原话挂在消息的 `source` 上——日志里的显示元数据，**模型永远收不到**。
+- 原生英文气泡由一条兄弟选择器隐藏；宿主改了消息行结构时这条规则会失效，那时中英两份都会显示（坏的方向也是安全的）。
+- 带图片或附件的消息**不隐藏**原生气泡（否则附件一起没了），退回「上方小字显示原文」的形式。
+- 想看完整英文：悬停那行小字；`/english-buddy-today` 与本地 JSONL 里也一直有 before/after。
 
-想要反过来（原文作为消息正文、英文作为附加上下文，模型两份都看到），把 `authoritative` 设成 `original`。
+想要反过来（原文作为消息正文、英文作为附加上下文、模型两份都看到），把 `authoritative` 设成 `original`。
 
 ## 已知限制
-
-- 气泡上方那行原文最多显示 3 行，更长的部分在悬停 `title` 里；完整原文始终在本地 JSONL 里。
-- literal guard 是机械检查，挡不住「用词换了但意思变了」。发现改写丢信息时用 `;;` 旁路。
-- 每次提交多 0.8–2 秒延迟。可以用 `sampleRate`、`onDemand`、`timeoutMs` 收紧。
-- 命令在 action 描述里用的是连字符命名（`/english-buddy-today`），因为 DSH 的命令名不允许冒号。
-- 本插件只覆盖纠错/重述这一条主干。上游的 `/review` 深度批改、`/drill` 刷题、`writing-guide` 技能与 4 个批改子代理尚未移植。
-
 ## 与上游的关系
 
 模式划分、纠错规则、注释格式与 literal guard 的思路来自 [`xiaolai/english-buddy-for-claude`](https://github.com/xiaolai/english-buddy-for-claude)（ISC）。实现按 DeepSeek Harness 的 `agent/pre-step`、`ctx.llm`、slot 与命令接口重写，没有复用其 Claude Code hook 代码。

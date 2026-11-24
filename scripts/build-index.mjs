@@ -135,13 +135,19 @@ if (!/^[0-9a-f]{40}$/.test(commit)) {
 const publishTimestamp = Number(git('log', '-1', '--format=%ct'))
 
 const pluginRoot = join(ROOT, 'plugins')
-const available = readdirSync(pluginRoot).filter(name => {
+// Only DSH bundles belong in this index. A Claude Code plugin (for clds) has a
+// package.json too, but no dsh.bundle.patch; listing it here would offer DSH
+// users an install that cannot work.
+function isDshPlugin(directory) {
   try {
-    return statSync(join(pluginRoot, name, 'package.json')).isFile()
+    if (!statSync(join(pluginRoot, directory, 'package.json')).isFile()) return false
+    const manifest = JSON.parse(readFileSync(join(pluginRoot, directory, 'package.json'), 'utf8'))
+    return typeof manifest.dsh?.bundle?.patch === 'string'
   } catch {
     return false
   }
-})
+}
+const available = readdirSync(pluginRoot).filter(isDshPlugin)
 const directories = ORDER.filter(name => available.includes(name))
   .concat(available.filter(name => !ORDER.includes(name)).sort())
 

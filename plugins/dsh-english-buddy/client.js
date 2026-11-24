@@ -320,28 +320,70 @@ window.__ModuleLoader__.load({
         // The rewrite keeps the user's own wording on the message source, which
         // the model never sees. Render it above the bubble so the transcript
         // still shows what was actually typed.
+        const CAPTION_STYLE = {
+          maxWidth: '100%',
+          margin: '0 2px',
+          color: 'var(--dsw-alias-label-caption)',
+          fontFamily: 'inherit',
+          fontSize: 'calc(var(--dsh-content-font-size-secondary, 13px) - 2px)',
+          lineHeight: 1.45,
+          textAlign: 'right',
+          whiteSpace: 'pre-wrap',
+          wordBreak: 'break-word',
+          overflow: 'hidden',
+          display: '-webkit-box',
+          WebkitLineClamp: 3,
+          WebkitBoxOrient: 'vertical',
+        }
+
         function OriginalNote(props) {
           const note = props?.matched
           if (note === null || typeof note !== 'object' || typeof note.before !== 'string' || note.before.length === 0) return null
+          const original = note.before
+          const english = typeof note.after === 'string' ? note.after : ''
+
+          // A message that carries images or files keeps the host's own bubble,
+          // so the attachment rendering cannot be hidden along with it.
+          if (note.withAttachments === true) {
+            return h('div', { title: original, style: { ...CAPTION_STYLE, marginBottom: '4px' } },
+              `${t('youWrote')} · ${original}`)
+          }
+
           return h('div', {
-            title: note.before,
+            'data-english-buddy-orig': '',
             style: {
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'flex-end',
+              gap: '2px',
               alignSelf: 'flex-end',
               maxWidth: '100%',
-              margin: '0 2px 4px',
-              color: 'var(--dsw-alias-label-caption)',
+              minWidth: 0,
+            },
+          },
+          // The row's next sibling is the bubble that carries the text the model
+          // received. Hiding it is what lets the bubble position show the user's own
+          // wording; if the host row structure changes the rule stops matching and
+          // both texts appear, which is the safe direction to fail.
+          h('style', null, '[data-english-buddy-orig] + * { display: none !important; }'),
+          h('div', {
+            title: original,
+            style: {
+              maxWidth: '100%',
+              padding: '6px 10px',
+              borderRadius: 'var(--dsw-radius-sm, 8px)',
+              background: 'var(--dsw-alias-interactive-bg-hover)',
+              color: 'var(--dsw-alias-label-primary)',
               fontFamily: 'inherit',
-              fontSize: 'calc(var(--dsh-content-font-size-secondary, 13px) - 2px)',
-              lineHeight: 1.45,
-              textAlign: 'right',
+              fontSize: 'var(--dsh-content-font-size-primary, 14px)',
+              lineHeight: 1.55,
+              textAlign: 'left',
               whiteSpace: 'pre-wrap',
               wordBreak: 'break-word',
-              overflow: 'hidden',
-              display: '-webkit-box',
-              WebkitLineClamp: 3,
-              WebkitBoxOrient: 'vertical',
             },
-          }, `${t('youWrote')} · ${note.before}`)
+          }, original),
+          english.length === 0 ? null : h('div', { title: english, style: CAPTION_STYLE },
+            `The user said, "${english}"`))
         }
 
         try {
@@ -356,8 +398,10 @@ window.__ModuleLoader__.load({
               return typeof note.before === 'string' && note.before.length > 0 ? note : null
             },
           }, OriginalNote))
-        } catch {
-          // The annotation is a convenience; never let it cost the transcript.
+        } catch (error) {
+          // The annotation is a convenience; never let it cost the transcript,
+          // but do not hide why it is missing either.
+          console.warn('[english-buddy] original-wording slot unavailable:', error)
         }
       },
     }

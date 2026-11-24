@@ -6,7 +6,7 @@
   "description": "A DeepSeek Harness plugin index plus the plugin sources it lists",
   "scripts": {
     "index": "node scripts/build-index.mjs",
-    "test": "node plugins/dsh-english-buddy/test/coach.test.mjs && node plugins/dsh-english-buddy/test/store.test.mjs && node plugins/dsh-deepseek-meter/test/state.test.mjs"
+    "test": "node plugins/dsh-english-buddy/test/coach.test.mjs && node plugins/dsh-english-buddy/test/store.test.mjs && node plugins/dsh-deepseek-meter/test/state.test.mjs && node --test plugins/clds-english-buddy-for-claude/test/*.test.mjs"
   },
   "license": "ISC"
 }
