@@ -52,6 +52,8 @@ window.__ModuleLoader__.load({
         modeEnglish: '译为英文',
         modeRefine: '重写',
         youWrote: '你写的',
+        stateError: '插件状态读取失败',
+        stateErrorHint: 'Host 半可能未加载，或该路由未授权。点击重试；详情见控制台。',
         lastIssue: '最近一次降级',
         historyDegraded: '⚠ 历史读写失败，只统计本进程的记录',
       },
@@ -80,6 +82,8 @@ window.__ModuleLoader__.load({
         modeEnglish: 'restated',
         modeRefine: 'refined',
         youWrote: 'You wrote',
+        stateError: 'Plugin state unavailable',
+        stateErrorHint: 'The Host half may not be loaded, or the route is unauthorized. Click to retry; see the console.',
         lastIssue: 'Last degraded path',
         historyDegraded: 'History could not be read or written; counting this process only',
       },
@@ -209,6 +213,7 @@ window.__ModuleLoader__.load({
           if (!alive.current) return
           if (error?.name === 'AbortError') return
           const reason = error?.name === 'TimeoutError' ? 'timeout' : String(error?.message ?? error)
+          console.warn('[english-buddy] state route failed:', reason)
           setState(previous => (previous.data === undefined
             ? { status: 'error', reason }
             : { status: 'stale', data: previous.data, reason }))
@@ -237,10 +242,31 @@ window.__ModuleLoader__.load({
       }, [load])
 
       const data = state.data
-      const unavailable = state.status !== 'loading' && data?.coach?.status !== 'ready'
-      const active = state.status === 'loading' ? false : hasActivity(data)
-      // Silence is the signal: nothing to say while loading, on a clean day, or on a fetch error.
-      if (state.status === 'loading' || state.status === 'error') return null
+      if (state.status === 'loading') return null
+      if (state.status === 'error') {
+        // A silent absence reads as "the plugin did not start"; say so instead.
+        return h('button', {
+          type: 'button',
+          title: `${t('stateError')}\n${t('stateErrorHint')}\n${state.reason ?? ''}`.trim(),
+          onClick: () => { void load(true) },
+          onMouseDown: event => event.preventDefault(),
+          onMouseEnter: () => setHover(true),
+          onMouseLeave: () => setHover(false),
+          style: {
+            display: 'flex', alignItems: 'center', gap: '6px', maxWidth: '100%', padding: '1px 8px',
+            border: 'none', borderRadius: 'var(--dsw-radius-sm, 8px)',
+            background: hover ? 'var(--dsw-alias-interactive-bg-hover)' : 'transparent',
+            color: 'var(--dsw-alias-state-warn-label)',
+            fontFamily: 'inherit', fontWeight: 400,
+            fontSize: 'calc(var(--dsh-content-font-size-secondary, 13px) - 1px)',
+            lineHeight: 'calc(20px + var(--dsh-content-font-delta-secondary, 0px))',
+            whiteSpace: 'nowrap', cursor: 'pointer', userSelect: 'none',
+          },
+        }, `✎ ${t('stateError')}`)
+      }
+      const unavailable = data?.coach?.status !== 'ready'
+      const active = hasActivity(data)
+      // Silence is the signal: nothing to say on a clean day with working coaching.
       if (!active && !unavailable) return null
 
       const headingText = unavailable ? t('unavailable') : heading(t, data?.today)
