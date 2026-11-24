@@ -1,7 +1,7 @@
 {
   "name": "clds-english-buddy-for-claude",
-  "version": "0.1.0",
-  "description": "English coach for Claude Code running on DeepSeek via clds — corrects prompts, translates Chinese, refines :: prompts, and reports progress using the same DeepSeek Anthropic-compatible endpoint.",
+  "version": "0.2.0",
+  "description": "English coach for Claude Code on any Anthropic-compatible launcher (clds/DeepSeek, clkc/Kimi, clki/Moonshot, local endpoints) — corrects prompts, translates Chinese, refines :: prompts, and reports progress.",
   "author": {
     "name": "litang"
   },
@@ -13,7 +13,9 @@
     "translation",
     "deepseek",
     "clds",
-    "claude-code"
+    "claude-code",
+    "kimi",
+    "clkc"
   ],
   "skills": [
     "./skills/english-buddy"
@@ -23,7 +25,11 @@
       "api.deepseek.com",
       "api.anthropic.com",
       "localhost",
-      "127.0.0.1"
+      "127.0.0.1",
+      "api.kimi.com",
+      "api.kimi.ai",
+      "api.moonshot.cn",
+      "api.moonshot.ai"
     ]
   }
 }

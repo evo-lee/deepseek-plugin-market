@@ -1,13 +1,13 @@
 // Resolve the model endpoint used for coaching.
 //
-// clds starts Claude Code with:
-//   ANTHROPIC_BASE_URL=https://api.deepseek.com/anthropic
-//   ANTHROPIC_AUTH_TOKEN=<DEEPSEEK_API_KEY>
-// and explicitly unsets ANTHROPIC_API_KEY. The upstream english-buddy hook
-// only knew ANTHROPIC_API_KEY / CLAUDE_CODE_OAUTH_TOKEN, so it reported "no
-// credentials" under clds and never coached. This module understands the clds
-// environment, keeps working on api.anthropic.com, and never sends a Claude
-// OAuth token to a non-Anthropic host.
+// Works with any clai-style launcher that exposes an Anthropic Messages
+// endpoint through Claude Code's environment:
+//   clds  (DeepSeek):  ANTHROPIC_BASE_URL + ANTHROPIC_AUTH_TOKEN
+//   clkc  (Kimi Code): ANTHROPIC_BASE_URL + ANTHROPIC_API_KEY
+//   clki  (Kimi):      ANTHROPIC_BASE_URL + ANTHROPIC_AUTH_TOKEN
+//   clmm/clza/local/ollama/lmstudio: the same environment shape
+// and still works on api.anthropic.com. It never sends a Claude OAuth token
+// to a non-Anthropic host, and never sends a DeepSeek key to another provider.
 
 import fs from "node:fs";
 import { spawnSync } from "node:child_process";
@@ -18,10 +18,11 @@ const DEEPSEEK_BASE = "https://api.deepseek.com/anthropic";
 const ANTHROPIC_BASE = "https://api.anthropic.com";
 const DEFAULT_DEEPSEEK_MODEL = "deepseek-flash";
 const DEFAULT_ANTHROPIC_MODEL = "claude-haiku-4-5-20251001";
-const DEFAULT_TIMEOUT_SECONDS = { deepseek: 12, anthropic: 5, compatible: 12 };
+const DEFAULT_TIMEOUT_SECONDS = { deepseek: 12, anthropic: 5, kimi: 30, "kimi-code": 30, compatible: 12 };
+const DEFAULT_MAX_TOKENS = { kimi: 4096, "kimi-code": 4096 };
 const MAX_TIMEOUT_SECONDS = 30;
 
-const CLDS_PROFILE = /claude-(?:deepseek|lds|codex|openai|gemini|grok|local|ollama|lmstudio|minimax|zai|kimi|kimi-code)\b/;
+const CLAI_PROFILE = /claude-(?:deepseek|lds|codex|openai|gemini|grok|local|ollama|lmstudio|minimax|zai|kimi|kimi-code)\b/;
 
 function envValue(env, name) {
   const value = env[name];
@@ -34,6 +35,20 @@ export function firstEnv(env, names) {
     if (value !== null) return { name, value };
   }
   return null;
+}
+
+// Provider-neutral names first, then the Claude- and clds-prefixed aliases.
+function buddyEnv(env, suffix) {
+  return firstEnv(env, [
+    `ENGLISH_BUDDY_${suffix}`,
+    `CLAUDE_ENGLISH_BUDDY_${suffix}`,
+    `CLDS_ENGLISH_BUDDY_${suffix}`,
+  ]);
+}
+
+function authSchemeOverride(env) {
+  const raw = buddyEnv(env, "AUTH_SCHEME")?.value.toLowerCase();
+  return raw === "bearer" || raw === "x-api-key" ? raw : null;
 }
 
 function isLoopback(hostname) {
@@ -88,25 +103,34 @@ function familyOf(endpoint, env) {
     return "deepseek";
   }
   if (host === "api.anthropic.com" || host.endsWith(".anthropic.com")) return "anthropic";
+  // Kimi Code and the Kimi/Moonshot platform. Both require thinking (K3 and
+  // K3.1 Pro reject thinking:disabled), so they get no thinking field, a
+  // larger max_tokens floor, and a longer timeout.
+  if (host === "api.kimi.com" || host === "api.kimi.ai" || host.endsWith(".kimi.com") || host.endsWith(".kimi.ai")) {
+    return "kimi-code";
+  }
+  if (host === "api.moonshot.ai" || host === "api.moonshot.cn" || host.endsWith(".moonshot.ai") || host.endsWith(".moonshot.cn")) {
+    return "kimi";
+  }
   return "compatible";
 }
 
 function chooseBase(env) {
-  const explicit = firstEnv(env, [
-    "CLDS_ENGLISH_BUDDY_BASE_URL",
-    "CLAUDE_ENGLISH_BUDDY_BASE_URL",
-    "ANTHROPIC_BASE_URL",
-  ]);
+  const explicit = buddyEnv(env, "BASE_URL")
+    || firstEnv(env, ["ANTHROPIC_BASE_URL"]);
   if (explicit) return { value: explicit.value, source: `env:${explicit.name}` };
 
-  const customProfile = CLDS_PROFILE.test(env.CLAUDE_CONFIG_DIR || "");
-  const deepseekProfile = /claude-(?:deepseek|lds)\b/.test(env.CLAUDE_CONFIG_DIR || "");
-  if (deepseekProfile || envValue(env, "DEEPSEEK_API_KEY")) {
-    return { value: DEEPSEEK_BASE, source: "clds-default" };
-  }
+  const profile = env.CLAUDE_CONFIG_DIR || "";
+  const customProfile = CLAI_PROFILE.test(profile);
+  const deepseekProfile = /claude-(?:deepseek|lds)\b/.test(profile);
+  if (deepseekProfile) return { value: DEEPSEEK_BASE, source: "clai-default" };
   // Another clai profile (Kimi, Codex, Gemini, ...) without its launcher's
-  // base URL: do not silently send its token to api.anthropic.com.
+  // base URL: do not silently send its token to api.anthropic.com. A
+  // globally exported DEEPSEEK_API_KEY must not hijack that profile either.
   if (customProfile) return { value: null, source: "missing" };
+  if (envValue(env, "DEEPSEEK_API_KEY")) {
+    return { value: DEEPSEEK_BASE, source: "env:DEEPSEEK_API_KEY" };
+  }
   return { value: ANTHROPIC_BASE, source: "default" };
 }
 
@@ -121,7 +145,7 @@ function readKeyFile(file) {
 
 function keychainCredential(env, family) {
   if (family !== "anthropic") return null;
-  if (env.CLDS_ENGLISH_BUDDY_DISABLE_KEYCHAIN === "1" || env.CLAUDE_ENGLISH_BUDDY_DISABLE_KEYCHAIN === "1") {
+  if (buddyEnv(env, "DISABLE_KEYCHAIN")?.value === "1") {
     return null;
   }
   if (process.platform !== "darwin") return null;
@@ -144,44 +168,47 @@ function keychainCredential(env, family) {
 }
 
 function chooseCredential(env, family) {
-  const explicit = firstEnv(env, ["CLDS_ENGLISH_BUDDY_TOKEN", "CLAUDE_ENGLISH_BUDDY_TOKEN"]);
+  const override = authSchemeOverride(env);
+  const explicit = buddyEnv(env, "TOKEN");
   if (explicit) {
-    const scheme = (env.CLDS_ENGLISH_BUDDY_AUTH_SCHEME || "bearer").toLowerCase();
     return {
       token: explicit.value,
       source: `env:${explicit.name}`,
-      scheme: scheme === "x-api-key" ? "x-api-key" : "bearer",
+      scheme: override || "bearer",
     };
   }
 
-  // Claude Code sends this for OAuth and for custom providers; clds uses it
-  // for the DeepSeek API key.
+  // Claude Code sends this for OAuth and for most custom providers; clds and
+  // clki use it for their API keys.
   const authToken = envValue(env, "ANTHROPIC_AUTH_TOKEN");
   if (authToken) {
-    return { token: authToken, source: "env:ANTHROPIC_AUTH_TOKEN", scheme: "bearer" };
+    return { token: authToken, source: "env:ANTHROPIC_AUTH_TOKEN", scheme: override || "bearer" };
   }
 
+  // clkc and clmm set ANTHROPIC_API_KEY and unset ANTHROPIC_AUTH_TOKEN. Claude
+  // Code sends that as x-api-key, which is also what these endpoints expect.
   const apiKey = envValue(env, "ANTHROPIC_API_KEY");
   if (apiKey) {
+    const defaultScheme = apiKey.startsWith("sk-ant-oat") ? "bearer" : "x-api-key";
     return {
       token: apiKey,
       source: "env:ANTHROPIC_API_KEY",
-      scheme: apiKey.startsWith("sk-ant-oat") ? "bearer" : family === "anthropic" ? "x-api-key" : "bearer",
+      scheme: override || defaultScheme,
     };
   }
 
-  // A DeepSeek key is only meaningful on a non-Anthropic endpoint. Never send
-  // it to api.anthropic.com just because the file exists.
-  if (family !== "anthropic") {
+  // A DeepSeek key is meaningful only on a DeepSeek endpoint. Never send it
+  // to Anthropic, Kimi, or any other provider just because the file exists.
+  if (family === "deepseek") {
     const deepseekKey = envValue(env, "DEEPSEEK_API_KEY");
     if (deepseekKey) {
-      return { token: deepseekKey, source: "env:DEEPSEEK_API_KEY", scheme: "bearer" };
+      return { token: deepseekKey, source: "env:DEEPSEEK_API_KEY", scheme: override || "bearer" };
     }
 
     const file = deepseekKeyFile(env);
     const fileKey = readKeyFile(file);
     if (fileKey) {
-      return { token: fileKey, source: "file:deepseek-api-key", scheme: "bearer" };
+      return { token: fileKey, source: "file:deepseek-api-key", scheme: override || "bearer" };
     }
   }
 
@@ -199,7 +226,7 @@ function chooseCredential(env, family) {
     return {
       token: keychain.token,
       source: "keychain:Claude Code-credentials",
-      scheme: keychain.token.startsWith("sk-ant-oat") ? "bearer" : "x-api-key",
+      scheme: authSchemeOverride(env) || (keychain.token.startsWith("sk-ant-oat") ? "bearer" : "x-api-key"),
     };
   }
 
@@ -207,7 +234,7 @@ function chooseCredential(env, family) {
 }
 
 function chooseModel(env, family, config) {
-  const explicit = firstEnv(env, ["CLDS_ENGLISH_BUDDY_MODEL", "CLAUDE_ENGLISH_BUDDY_MODEL"]);
+  const explicit = buddyEnv(env, "MODEL");
   const configModel = typeof config?.model === "string" && config.model.trim() !== "" ? config.model.trim() : null;
   const claudeMapped = firstEnv(env, ["ANTHROPIC_DEFAULT_HAIKU_MODEL", "ANTHROPIC_MODEL"]);
   let model = explicit?.value || configModel || claudeMapped?.value || "";
@@ -227,10 +254,7 @@ function chooseModel(env, family, config) {
 }
 
 function chooseTimeout(env, family, config) {
-  const raw = firstEnv(env, [
-    "CLDS_ENGLISH_BUDDY_TIMEOUT_SECONDS",
-    "CLAUDE_ENGLISH_BUDDY_TIMEOUT_SECONDS",
-  ]);
+  const raw = buddyEnv(env, "TIMEOUT_SECONDS");
   const value = raw ? Number(raw.value) : Number(config?.timeout_seconds);
   const fallback = DEFAULT_TIMEOUT_SECONDS[family] ?? DEFAULT_TIMEOUT_SECONDS.compatible;
   if (!Number.isFinite(value) || value <= 0) return { seconds: fallback, source: "default" };
@@ -239,9 +263,25 @@ function chooseTimeout(env, family, config) {
 
 function chooseThinking(env, family) {
   if (family !== "deepseek") return { value: null, source: "unsupported" };
-  const raw = (env.CLDS_ENGLISH_BUDDY_THINKING || "disabled").toLowerCase();
-  if (raw === "enabled" || raw === "on") return { value: { type: "enabled" }, source: "env:CLDS_ENGLISH_BUDDY_THINKING" };
+  const raw = (buddyEnv(env, "THINKING")?.value || "disabled").toLowerCase();
+  if (raw === "enabled" || raw === "on") return { value: { type: "enabled" }, source: "env:THINKING" };
   return { value: { type: "disabled" }, source: "default" };
+}
+
+function chooseEffort(env, family, config) {
+  // Only Kimi Code documents output_config.effort. Kimi K3 always thinks, so
+  // "low" keeps the auxiliary coaching call from spending a high-effort budget.
+  if (family !== "kimi-code") return { value: null, source: "unsupported" };
+  const raw = buddyEnv(env, "EFFORT");
+  const configEffort = typeof config?.effort === "string" ? config.effort.toLowerCase() : null;
+  const candidate = (raw?.value || configEffort || "low").toLowerCase();
+  if (candidate === "none") return { value: null, source: raw ? `env:${raw.name}` : "config" };
+  const value = ["low", "high", "max"].includes(candidate) ? candidate : "low";
+  return { value, source: raw ? `env:${raw.name}` : configEffort ? "config" : "default" };
+}
+
+function chooseMaxTokens(family) {
+  return DEFAULT_MAX_TOKENS[family] ?? null;
 }
 
 /**
@@ -253,7 +293,7 @@ export function resolveProvider({ env = process.env, config = {} } = {}) {
     return {
       ok: false,
       failureCode: "missing-base-url",
-      message: "This clai provider profile has no ANTHROPIC_BASE_URL. Start Claude Code through its launcher (for example clds) or set CLDS_ENGLISH_BUDDY_BASE_URL.",
+      message: "This clai provider profile has no ANTHROPIC_BASE_URL. Start Claude Code through its launcher (clds, clkc, clki, ...) or set ENGLISH_BUDDY_BASE_URL.",
       baseUrl: null,
       baseSource: base.source,
       endpoint: null,
@@ -264,6 +304,9 @@ export function resolveProvider({ env = process.env, config = {} } = {}) {
       timeoutSource: "none",
       thinking: null,
       thinkingSource: "none",
+      effort: null,
+      effortSource: "none",
+      maxTokens: null,
       credentialSource: "none",
       authScheme: "none",
       hasToken: false,
@@ -279,6 +322,8 @@ export function resolveProvider({ env = process.env, config = {} } = {}) {
   const model = chooseModel(env, family, config);
   const timeout = chooseTimeout(env, family, config);
   const thinking = chooseThinking(env, family);
+  const effort = chooseEffort(env, family, config);
+  const maxTokens = chooseMaxTokens(family);
 
   const headers = {
     "content-type": "application/json",
@@ -303,6 +348,9 @@ export function resolveProvider({ env = process.env, config = {} } = {}) {
     timeoutSource: timeout.source,
     thinking: thinking.value,
     thinkingSource: thinking.source,
+    effort: effort.value,
+    effortSource: effort.source,
+    maxTokens,
     credentialSource: credential.source,
     authScheme: credential.scheme,
     headers,
@@ -317,13 +365,16 @@ export function resolveProvider({ env = process.env, config = {} } = {}) {
       result.failureCode = "no-credentials";
       result.message = family === "deepseek"
         ? "No DeepSeek credential found. Start Claude Code with clds, or set DEEPSEEK_API_KEY."
-        : "No coaching credential found. Set ANTHROPIC_API_KEY, ANTHROPIC_AUTH_TOKEN, or sign in to Claude Code.";
+        : "No coaching credential found for this provider. Start Claude Code through its clai launcher (clds, clkc, clki, ...), or set ANTHROPIC_API_KEY / ANTHROPIC_AUTH_TOKEN.";
     }
   }
   if (!result.model) {
     result.ok = false;
-    result.failureCode = "no-model";
-    result.message = "No coaching model could be resolved for this endpoint. Set CLDS_ENGLISH_BUDDY_MODEL.";
+    // A missing credential is the more actionable failure; keep it.
+    if (!result.failureCode) {
+      result.failureCode = "no-model";
+      result.message = "No coaching model could be resolved for this endpoint. Set ENGLISH_BUDDY_MODEL or config model.";
+    }
   }
   return result;
 }
@@ -368,13 +419,17 @@ export async function callMessages(provider, request) {
     return { ok: false, failureCode: "no-fetch", message: "This Node.js runtime has no fetch implementation.", latencyMs: 0 };
   }
 
+  // Kimi K3/K3.1 Pro spend thinking tokens out of max_tokens, so a 1024-token
+  // coaching budget can be consumed before any text is produced.
+  const maxTokens = Math.max(request.maxTokens ?? 0, provider.maxTokens ?? 0) || 1024;
   const body = {
     model: provider.model,
-    max_tokens: request.maxTokens ?? 1024,
+    max_tokens: maxTokens,
     system: request.system,
     messages: [{ role: "user", content: request.user }],
   };
   if (provider.thinking) body.thinking = provider.thinking;
+  if (provider.effort) body.output_config = { effort: provider.effort };
 
   const timeoutSignal = AbortSignal.timeout(provider.timeoutSeconds * 1000);
   const signal = request.signal
@@ -493,6 +548,9 @@ export function describeProvider(provider) {
     timeoutSeconds: provider.timeoutSeconds,
     timeoutSource: provider.timeoutSource,
     thinking: provider.thinking?.type || "not-sent",
+    effort: provider.effort || "not-sent",
+    effortSource: provider.effortSource,
+    maxTokens: provider.maxTokens,
     credentialSource: provider.credentialSource,
     authScheme: provider.authScheme,
     hasToken: provider.hasToken,

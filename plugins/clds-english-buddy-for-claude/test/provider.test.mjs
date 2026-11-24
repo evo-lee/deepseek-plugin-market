@@ -66,7 +66,7 @@ test("clds profile with no explicit base defaults to DeepSeek", () => {
       env: h.env({ CLAUDE_CONFIG_DIR: "/Users/test/.claude-deepseek", ANTHROPIC_AUTH_TOKEN: "x" }),
     });
     assert.equal(provider.family, "deepseek");
-    assert.equal(provider.baseSource, "clds-default");
+    assert.equal(provider.baseSource, "clai-default");
   } finally {
     h.cleanup();
   }
@@ -154,6 +154,142 @@ test("a non-DeepSeek clai profile without a base URL fails closed", () => {
   }
 });
 
+test("clkc environment resolves Kimi Code with x-api-key and effort=low", () => {
+  const h = tempHome();
+  try {
+    const provider = resolveProvider({
+      env: h.env({
+        CLAUDE_CONFIG_DIR: "/Users/test/.claude-kimi-code",
+        ANTHROPIC_BASE_URL: "https://api.kimi.com/coding/",
+        ANTHROPIC_API_KEY: "kimi-secret",
+        ANTHROPIC_DEFAULT_HAIKU_MODEL: "k3.1-pro",
+      }),
+    });
+    assert.equal(provider.ok, true);
+    assert.equal(provider.family, "kimi-code");
+    assert.equal(provider.endpoint, "https://api.kimi.com/coding/v1/messages");
+    assert.equal(provider.model, "k3.1-pro");
+    assert.equal(provider.authScheme, "x-api-key");
+    assert.equal(provider.headers["x-api-key"], "kimi-secret");
+    assert.equal(provider.thinking, null);
+    assert.equal(provider.effort, "low");
+    assert.equal(provider.timeoutSeconds, 30);
+    assert.equal(provider.maxTokens, 4096);
+    assert.equal(JSON.stringify(describeProvider(provider)).includes("kimi-secret"), false);
+  } finally {
+    h.cleanup();
+  }
+});
+
+test("clki (Moonshot) uses a bearer token and does not send Kimi Code effort", () => {
+  const h = tempHome();
+  try {
+    const provider = resolveProvider({
+      env: h.env({
+        CLAUDE_CONFIG_DIR: "/Users/test/.claude-kimi",
+        ANTHROPIC_BASE_URL: "https://api.moonshot.ai/anthropic",
+        ANTHROPIC_AUTH_TOKEN: "moonshot-secret",
+        ANTHROPIC_MODEL: "kimi-k3[1m]",
+      }),
+    });
+    assert.equal(provider.family, "kimi");
+    assert.equal(provider.endpoint, "https://api.moonshot.ai/anthropic/v1/messages");
+    assert.equal(provider.model, "kimi-k3");
+    assert.equal(provider.authScheme, "bearer");
+    assert.equal(provider.effort, null);
+    assert.equal(provider.timeoutSeconds, 30);
+  } finally {
+    h.cleanup();
+  }
+});
+
+test("provider-neutral ENGLISH_BUDDY_* env wins over prefixed aliases", () => {
+  const h = tempHome();
+  try {
+    const provider = resolveProvider({
+      env: h.env({
+        ENGLISH_BUDDY_BASE_URL: "https://api.z.ai/api/anthropic",
+        ENGLISH_BUDDY_TOKEN: "zai-secret",
+        ENGLISH_BUDDY_MODEL: "glm-5.3",
+        CLDS_ENGLISH_BUDDY_MODEL: "ignored-model",
+      }),
+    });
+    assert.equal(provider.ok, true);
+    assert.equal(provider.family, "compatible");
+    assert.equal(provider.endpoint, "https://api.z.ai/api/anthropic/v1/messages");
+    assert.equal(provider.model, "glm-5.3");
+    assert.equal(provider.authScheme, "bearer");
+    assert.equal(provider.headers.authorization, "Bearer zai-secret");
+  } finally {
+    h.cleanup();
+  }
+});
+
+test("a global DeepSeek key never hijacks another clai profile", () => {
+  const h = tempHome();
+  try {
+    const provider = resolveProvider({
+      env: h.env({
+        CLAUDE_CONFIG_DIR: "/Users/test/.claude-kimi-code",
+        DEEPSEEK_API_KEY: "deepseek-secret",
+      }),
+    });
+    assert.equal(provider.ok, false);
+    assert.equal(provider.failureCode, "missing-base-url");
+    assert.equal(provider.hasToken, false);
+  } finally {
+    h.cleanup();
+  }
+});
+
+test("a DeepSeek key file is never sent to a Kimi endpoint", () => {
+  const h = tempHome();
+  try {
+    const file = path.join(h.dir, "xdg", "claude-driven-ai-providers", "deepseek-api-key");
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.writeFileSync(file, "file-secret\n", { mode: 0o600 });
+    const provider = resolveProvider({
+      env: h.env({ ANTHROPIC_BASE_URL: "https://api.kimi.com/coding/" }),
+    });
+    assert.equal(provider.ok, false);
+    assert.equal(provider.failureCode, "no-credentials");
+    assert.equal(provider.credentialSource, "none");
+  } finally {
+    h.cleanup();
+  }
+});
+
+test("Kimi requests carry effort and a safe max_tokens floor", async () => {
+  const h = tempHome();
+  try {
+    const p = provider(h.env({
+      CLAUDE_CONFIG_DIR: "/Users/test/.claude-kimi-code",
+      ANTHROPIC_BASE_URL: "https://api.kimi.com/coding/",
+      ANTHROPIC_API_KEY: "kimi-secret",
+      ANTHROPIC_MODEL: "k3.1-pro",
+    }));
+    let body;
+    const result = await callMessages(p, {
+      system: "s",
+      user: "u",
+      maxTokens: 1024,
+      fetchImpl: async (url, init) => {
+        body = JSON.parse(init.body);
+        return new Response(JSON.stringify({
+          content: [{ type: "thinking", thinking: "..." }, { type: "text", text: "ok" }],
+          stop_reason: "end_turn",
+        }), { status: 200 });
+      },
+    });
+    assert.equal(result.ok, true);
+    assert.equal(body.max_tokens, 4096);
+    assert.deepEqual(body.output_config, { effort: "low" });
+    assert.equal(body.thinking, undefined);
+  } finally {
+    h.cleanup();
+  }
+});
+
 test("bad base URLs are rejected, loopback http is allowed", () => {
   const h = tempHome();
   try {
@@ -206,6 +342,7 @@ test("callMessages sends the Anthropic messages shape and reads text", async () 
     assert.equal(seen.url, "https://api.deepseek.com/anthropic/v1/messages");
     assert.equal(seen.body.model, "deepseek-flash");
     assert.deepEqual(seen.body.thinking, { type: "disabled" });
+    assert.equal(seen.body.output_config, undefined);
     assert.equal(seen.init.headers.authorization, "Bearer x");
   } finally {
     h.cleanup();

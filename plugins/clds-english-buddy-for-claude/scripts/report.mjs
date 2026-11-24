@@ -51,6 +51,42 @@ function pct(value) {
   return `${value}%`;
 }
 
+const LESSON_RULES = [
+  [/apostroph/i, "Use an apostrophe in contractions (it's = it is) and possessives (the user's token)."],
+  [/spell/i, "Run a spell checker before sending; spelling slips are the easiest to catch."],
+  [/article/i, "Use a/an for one nonspecific countable noun and the for a specific one."],
+  [/preposition/i, "Learn the verb + preposition pair as one unit; it rarely translates word-for-word."],
+  [/agreement|subject.?verb/i, "Make the verb agree with its subject; ignore the words in between."],
+  [/tense/i, "Keep the tense consistent with when the action happens."],
+  [/punctuation|comma|colon|semicolon|dash/i, "Punctuation marks sentence structure; check commas, apostrophes, and sentence boundaries."],
+  [/word.?choice|vocab|collocation/i, "Choose the word that matches the intended meaning and register."],
+  [/grammar/i, "Read the sentence aloud; grammar errors usually sound wrong before they look wrong."],
+];
+
+function lessonRule(category) {
+  for (const [pattern, rule] of LESSON_RULES) {
+    if (pattern.test(category || "")) return rule;
+  }
+  return "Compare the two forms and note what changed.";
+}
+
+// Upstream ranks lessons by frequency, then broad applicability, then this
+// category order. Frequency is already handled by categoryTotals.
+const LESSON_PRIORITY = [
+  [/grammar|agreement|tense/i, 0],
+  [/article/i, 1],
+  [/preposition/i, 2],
+  [/word.?choice|vocab|collocation/i, 3],
+  [/punctuat|apostroph|comma|colon|semicolon|dash/i, 4],
+  [/spell/i, 5],
+];
+function lessonPriority(category) {
+  for (const [pattern, rank] of LESSON_PRIORITY) {
+    if (pattern.test(category || "")) return rank;
+  }
+  return 99;
+}
+
 function fixesFor(record) {
   if (!record.annotations) return "—";
   const storage = typeof record.annotations === "string" ? record.annotations : "";
@@ -115,14 +151,19 @@ function reportToday(options) {
     }
   }
 
-  lines.push("", "## Focus Areas", "");
-  const categories = categoryTotals(today.patterns).slice(0, 3);
+  lines.push("", "## Lessons of the Day", "");
+  const categories = categoryTotals(today.patterns)
+    .sort((a, b) => b.count - a.count
+      || lessonPriority(a.category) - lessonPriority(b.category)
+      || a.category.localeCompare(b.category))
+    .slice(0, 3);
   if (categories.length === 0) {
-    lines.push("No recurring categories today.");
+    lines.push("No lesson today. Clean prompts are the goal.");
   } else {
     for (const entry of categories) {
       lines.push(`### ${entry.category} — ${entry.count} occurrence${entry.count === 1 ? "" : "s"}`, "");
-      for (const pattern of entry.patterns.slice(0, 3)) {
+      lines.push(`**Rule**: ${lessonRule(entry.category)}`, "");
+      for (const pattern of entry.patterns.slice(0, 2)) {
         lines.push(`- \`${pattern.original} → ${pattern.corrected}\`${pattern.category ? ` (${pattern.category})` : ""}`);
       }
       lines.push("");

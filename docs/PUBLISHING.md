@@ -67,15 +67,17 @@ npm run index
 git add index.json && git commit -m "chore: publish index" && git push
 ```
 
-## 6. Claude Code / clds 插件
+## 6. Claude Code / clai 插件
 
-根目录的 `.claude-plugin/marketplace.json` 只列 `clds-english-buddy-for-claude`。它不走 DSH 索引，也不需要 `index.json`；推送后直接：
+根目录的 `.claude-plugin/marketplace.json` 只列 `clds-english-buddy-for-claude`。它不走 DSH 索引，也不需要 `index.json`；同一个插件可以装进任意 clai profile（clds、clkc、clki……）：
 
 ```sh
-CLAUDE_CONFIG_DIR="$HOME/.claude-deepseek" \
+PROFILE="$HOME/.claude-deepseek"    # 或 ~/.claude-kimi-code、~/.claude-kimi
+
+CLAUDE_CONFIG_DIR="$PROFILE" \
   claude plugin marketplace add <repo-url-or-local-path>
 
-CLAUDE_CONFIG_DIR="$HOME/.claude-deepseek" \
+CLAUDE_CONFIG_DIR="$PROFILE" \
   claude plugin install clds-english-buddy-for-claude@litang-deepseek-plugin-market
 ```
 
@@ -89,4 +91,4 @@ CLAUDE_CONFIG_DIR="$HOME/.claude-deepseek" \
 - [ ] 每个 DSH 插件的 `locale/{zh,en}.json`、`docs/DETAIL{,.en}.md`、`icon.svg` 都在
 - [ ] 仓库公开，`git+<url>#<commit>&path:plugins/<name>` 能拉到
 - [ ] 在干净 profile 里从 Discover 装一次 DSH 插件，确认能装上、能跑
-- [ ] 在 `~/.claude-deepseek` 里装一次 clds 插件，运行 `doctor --probe` 和 `today`
+- [ ] 在 `~/.claude-deepseek`（clds）和 `~/.claude-kimi-code`（clkc）里各装一次，运行 `doctor --probe` 和 `today`

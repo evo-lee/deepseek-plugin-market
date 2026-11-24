@@ -77,6 +77,9 @@ test("values are validated before writing", () => {
   assert.match(parseValue("sample_rate", "2").error, /0 to 1/);
   assert.deepEqual(parseValue("domain_terms", "A, B, a").value, ["A", "B", "a"]);
   assert.equal(parseValue("summary_language", "disabled").value, null);
+  assert.equal(parseValue("effort", "low").value, "low");
+  assert.equal(parseValue("effort", "none").value, null);
+  assert.match(parseValue("effort", "maximum").error, /effort/);
 });
 
 test("saveSetting writes project config and can unset", () => {

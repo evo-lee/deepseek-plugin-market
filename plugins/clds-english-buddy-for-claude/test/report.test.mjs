@@ -37,7 +37,9 @@ test("today report computes metrics and tables deterministically", () => {
     assert.match(result.stdout, /Prompts \| 5/);
     assert.match(result.stdout, /Corrections \| 4 \(80%\)/);
     assert.match(result.stdout, /its → it's/);
+    assert.match(result.stdout, /Lessons of the Day/);
     assert.match(result.stdout, /apostrophe — 2 occurrences/);
+    assert.match(result.stdout, /Rule.*apostrophe in contractions/);
     assert.match(result.stdout, /fix the authentication module/);
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });

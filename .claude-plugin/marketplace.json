@@ -4,14 +4,14 @@
     "name": "litang"
   },
   "metadata": {
-    "description": "DeepSeek tools for Claude Code (clds) and DeepSeek Harness"
+    "description": "English coaching for Claude Code on any Anthropic-compatible launcher (clds/DeepSeek, clkc/Kimi, clki/Moonshot) and plugins for DeepSeek Harness"
   },
   "plugins": [
     {
       "name": "clds-english-buddy-for-claude",
       "source": "./plugins/clds-english-buddy-for-claude",
-      "description": "English coach for Claude Code running on DeepSeek via clds — corrects prompts, translates Chinese, refines :: prompts, and reports progress.",
-      "version": "0.1.0",
+      "description": "English coach for Claude Code on any Anthropic-compatible launcher (clds/DeepSeek, clkc/Kimi, clki/Moonshot, local endpoints) — corrects prompts, translates Chinese, refines :: prompts, and reports progress.",
+      "version": "0.2.0",
       "author": {
         "name": "litang"
       },
@@ -21,6 +21,9 @@
         "coaching",
         "deepseek",
         "clds",
+        "kimi",
+        "clkc",
+        "clai",
         "claude-code"
       ],
       "category": "developer-tools"

@@ -1,5 +1,5 @@
 ---
-description: Today's language report — corrections made, recurring mistakes, focus areas, and trend.
+description: Today's language report — corrections made, recurring mistakes, Lessons of the Day, and trend.
 allowed-tools: Bash
 disable-model-invocation: true
 ---

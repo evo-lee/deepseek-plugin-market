@@ -30,7 +30,8 @@ function parseArgs(argv) {
 function help() {
   process.stdout.write(`Usage: node doctor.mjs [--probe] [--json] [--data-dir DIR]
 
-Checks the clds/DeepSeek coaching route without printing credentials.
+Checks the active clai coaching route (clds/DeepSeek, clkc/Kimi Code, ...)
+without printing credentials.
 --probe makes one small live request (it can incur API charges).
 `);
 }
@@ -68,16 +69,23 @@ function buildReport({ provider, resolved, history, metrics, env }) {
     warnings.push(`The DeepSeek key file exists (${keyFile.path}) but was not readable; check its permissions.`);
   }
   if (history.todayRecords === 0) {
-    warnings.push("No records today. If you have submitted prompts, the hook is not running in this session; restart clds after enabling the plugin.");
+    warnings.push("No records today. If you have submitted prompts, the hook is not running in this session; restart the clai launcher after enabling the plugin.");
   }
   if (failure) {
     warnings.push(`Last coaching failure: ${failure.failure_code || failure.failure || "unknown"} at ${failure.ts}${failure.message ? ` — ${sanitizeMessage(failure.message)}` : ""}`);
   }
-  if (!env.CLAUDE_CONFIG_DIR || !/claude-deepseek/.test(env.CLAUDE_CONFIG_DIR)) {
-    warnings.push(`CLAUDE_CONFIG_DIR is ${env.CLAUDE_CONFIG_DIR || "unset"}; clds normally uses ~/.claude-deepseek.`);
+  if (!env.CLAUDE_CONFIG_DIR) {
+    warnings.push("CLAUDE_CONFIG_DIR is unset; clai launchers normally set it to ~/.claude-<provider>.");
+  } else if (!/\.claude-[A-Za-z0-9._-]+/.test(env.CLAUDE_CONFIG_DIR)) {
+    warnings.push(`CLAUDE_CONFIG_DIR is ${env.CLAUDE_CONFIG_DIR}; this does not look like a clai provider profile.`);
+  }
+  if ((provider.family === "kimi" || provider.family === "kimi-code")
+    && resolved.config.coaching_mode === "automatic"
+    && Number(resolved.config.sample_rate) >= 1) {
+    warnings.push("Kimi K3/K3.1 Pro require thinking, so each coaching call can take several seconds even at effort=low. Consider coaching_mode=on-demand or a lower sample_rate.");
   }
   if (provider.family === "compatible") {
-    warnings.push("The endpoint is not recognized as DeepSeek or Anthropic. The plugin will still use the Anthropic Messages shape, but thinking is left to the provider.");
+    warnings.push("The endpoint is not recognized as DeepSeek, Anthropic, or Kimi. The plugin will still use the Anthropic Messages shape, but thinking and effort are left to the provider.");
   }
 
   return {
@@ -114,11 +122,13 @@ function markdown(report, probe) {
     `| Model | ${p.model || "(none)"} |`,
     `| Model source | ${p.modelSource} |`,
     `| Thinking | ${p.thinking} |`,
+    `| Effort | ${p.effort}${p.effortSource && p.effortSource !== "unsupported" ? ` (${p.effortSource})` : ""} |`,
+    `| Max output tokens | ${p.maxTokens ?? "request default"} |`,
     `| Timeout | ${p.timeoutSeconds}s (${p.timeoutSource}) |`,
     `| Credential source | ${p.credentialSource} |`,
     `| Auth scheme | ${p.authScheme} |`,
     `| Token present | ${p.hasToken ? "yes" : "no"} |`,
-    `| DeepSeek key file | ${report.keyFile.exists ? `${report.keyFile.path} (mode ${report.keyFile.mode})` : "not present"} |`,
+    `| DeepSeek key file | ${report.provider.family === "deepseek" ? (report.keyFile.exists ? `${report.keyFile.path} (mode ${report.keyFile.mode})` : "not present") : "not used for this provider"} |`,
     `| Data directory | ${report.history.dataDir} |`,
     `| History days | ${report.history.days} |`,
     `| Records today | ${report.history.todayRecords} |`,

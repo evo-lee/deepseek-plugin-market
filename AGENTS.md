@@ -154,11 +154,19 @@ plain ESM scripts, and offline tests. Facts that cost debugging time:
   `ANTHROPIC_BASE_URL=https://api.deepseek.com/anthropic`, and
   `ANTHROPIC_AUTH_TOKEN=$DEEPSEEK_API_KEY`. It **unsets** `ANTHROPIC_API_KEY`.
   A hook that only reads the API key reports "no credentials" and never coaches.
+- clkc (Kimi Code) runs with `CLAUDE_CONFIG_DIR=~/.claude-kimi-code`,
+  `ANTHROPIC_BASE_URL=https://api.kimi.com/coding/`, and
+  `ANTHROPIC_API_KEY=$KIMI_CODE_API_KEY` (x-api-key). Kimi K3/K3.1 Pro reject
+  `thinking: disabled`; omit the field, send `output_config.effort=low`, use a
+  >=4096 `max_tokens` floor, and allow ~30s. clki (Moonshot) is the same shape
+  but uses `ANTHROPIC_AUTH_TOKEN` and does not accept the effort field.
 - Never read the macOS keychain on a non-Anthropic endpoint. That would send an
-  Anthropic OAuth token to DeepSeek.
+  Anthropic OAuth token to DeepSeek. Never send a DeepSeek key to Kimi either.
 - `UserPromptSubmit` cannot replace the prompt. Emit
   `hookSpecificOutput.additionalContext` and `systemMessage`; the model sees the
   typed text plus the corrected reading.
+- `/review` is a host-model command (Read/AskUserQuestion), not a coaching
+  endpoint call. `today` renders deterministic Lessons of the Day.
 - Slash commands can inject script output with an inline `!` command or a
   fenced ```` ```! ```` block. Use that for reports and diagnostics; do not ask
   the model to recompute JSONL statistics.

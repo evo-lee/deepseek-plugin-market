@@ -1,9 +1,9 @@
 {
   "name": "clds-english-buddy-for-claude",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
-  "description": "English coach for Claude Code on DeepSeek via clds",
+  "description": "English coach for Claude Code on clai providers (clds/DeepSeek, clkc/Kimi Code, clki/Kimi)",
   "engines": {
     "node": ">=18.18.0"
   },

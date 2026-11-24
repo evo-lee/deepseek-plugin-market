@@ -31,6 +31,7 @@ export const DEFAULTS = Object.freeze({
   notify_on_failure: true,
   model: null,
   timeout_seconds: null,
+  effort: null, // low | high | max | none (Kimi Code only)
 });
 
 export const KNOWN_KEYS = [
@@ -45,10 +46,12 @@ export const KNOWN_KEYS = [
   "notify_on_failure",
   "model",
   "timeout_seconds",
+  "effort",
 ];
 
 const STRICTNESS = ["gentle", "standard", "strict"];
 const COACHING_MODES = ["automatic", "on-demand"];
+const EFFORTS = ["low", "high", "max", "none"];
 
 function readLayer(file) {
   const result = readJsonFile(file);
@@ -126,6 +129,14 @@ export function validateConfig(raw) {
   if (config.model !== null && typeof config.model !== "string") {
     errors.push("model must be a string or null");
     config.model = null;
+  }
+  if (config.effort !== null) {
+    if (typeof config.effort !== "string" || !EFFORTS.includes(config.effort.toLowerCase())) {
+      errors.push(`effort must be one of ${EFFORTS.join(", ")} or null`);
+      config.effort = null;
+    } else {
+      config.effort = config.effort.toLowerCase();
+    }
   }
   if (typeof config.escape_prefix !== "string" || config.escape_prefix === "") {
     errors.push("escape_prefix must be a non-empty string");
@@ -207,6 +218,12 @@ export function parseValue(key, raw) {
       return { value: raw.split(",").map((term) => term.trim()).filter(Boolean) };
     case "model":
       return { value: raw.trim() === "" ? null : raw.trim() };
+    case "effort": {
+      const value = raw.trim().toLowerCase();
+      if (value === "" || value === "null" || value === "disabled" || value === "none") return { value: null };
+      if (!EFFORTS.includes(value)) return { error: `effort must be one of ${EFFORTS.join(", ")}` };
+      return { value };
+    }
     case "escape_prefix":
       if (raw === "") return { error: "escape_prefix must not be empty" };
       return { value: raw };
@@ -237,7 +254,7 @@ export function formatConfigTable(resolved) {
   const value = (key) => {
     const raw = config[key];
     if (raw === null || raw === undefined) {
-      return key === "timeout_seconds" || key === "model" ? "provider default" : "disabled";
+      return key === "timeout_seconds" || key === "model" || key === "effort" ? "provider default" : "disabled";
     }
     if (Array.isArray(raw)) return raw.length === 0 ? "none" : raw.join(", ");
     return String(raw);
@@ -248,6 +265,7 @@ export function formatConfigTable(resolved) {
     ["strictness", value("strictness"), sources.strictness],
     ["sample_rate", value("sample_rate"), sources.sample_rate],
     ["timeout_seconds", value("timeout_seconds"), sources.timeout_seconds],
+    ["effort", value("effort"), sources.effort],
     ["max_input_chars", value("max_input_chars"), sources.max_input_chars],
     ["summary_language", value("summary_language"), sources.summary_language],
     ["domain_terms", value("domain_terms"), sources.domain_terms],
