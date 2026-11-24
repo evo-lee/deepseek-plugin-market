@@ -18,7 +18,7 @@ DeepSeek Harness 插件：在模型看到你的 prompt 之前，用 `deepseek-fl
 已在 `desktop` profile 里安装。其它环境：**Plugins → Add plugin** 选择本目录，或
 
 ```sh
-dsh plugin --profile desktop add ./dsh-english-buddy
+dsh plugin --profile desktop add ./plugins/dsh-english-buddy
 ```
 
 Host 侧改动需要重启或重新启用插件行；客户端改动刷新页面即可。

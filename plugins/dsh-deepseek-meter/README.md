@@ -17,7 +17,7 @@ DeepSeek Harness 插件：在会话输入框下方显示 **DeepSeek API 余额**
 已在 `desktop` profile 里安装（软链到本目录，修改立即生效）。其它环境：**Plugins → Add plugin** 选择本目录，或
 
 ```sh
-dsh plugin --profile desktop add ./dsh-deepseek-meter
+dsh plugin --profile desktop add ./plugins/dsh-deepseek-meter
 ```
 
 Host 侧改动需要重启或重新启用插件行；客户端改动刷新页面即可。
