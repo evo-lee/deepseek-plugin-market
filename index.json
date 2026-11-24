@@ -1,0 +1,91 @@
+{
+  "format": 1,
+  "title": {
+    "en": "DeepSeek Harness plugins by litang",
+    "zh": "litang 的 DeepSeek Harness 插件"
+  },
+  "description": {
+    "en": "A prompt coach and a usage meter for DeepSeek Harness.",
+    "zh": "DeepSeek Harness 的英文提示教练与用量表。"
+  },
+  "metadata": {
+    "categories": {
+      "coaching": {
+        "title": {
+          "en": "Language coaching",
+          "zh": "语言教练"
+        }
+      },
+      "observability": {
+        "title": {
+          "en": "Usage and balance",
+          "zh": "用量与余额"
+        }
+      }
+    }
+  },
+  "plugins": [
+    {
+      "name": "dsh-english-buddy",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "publishTimestamp": 1795499603,
+          "source": {
+            "type": "git",
+            "url": "https://github.com/evo-lee/deepseek-plugin-market",
+            "commit": "73b12f773fec95f757b42d1aeba1fcf6d2913d3c",
+            "path": "plugins/dsh-english-buddy"
+          }
+        }
+      ],
+      "repository": {
+        "url": "https://github.com/evo-lee/deepseek-plugin-market",
+        "directory": "plugins/dsh-english-buddy"
+      },
+      "title": {
+        "en": "English prompt coach",
+        "zh": "英文提示教练"
+      },
+      "description": {
+        "en": "Corrects your prompt, or restates a Chinese one in English, before the model sees it; a pill under the composer shows what changed.",
+        "zh": "在模型看到之前，把你的 prompt 纠错或改写成英文；输入框下方显示今天改了什么。"
+      },
+      "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgcm9sZT0iaW1nIiBhcmlhLWxhYmVsPSJFbmdsaXNoIHByb21wdCBjb2FjaCI+CiAgPGRlZnM+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImJ1ZGR5LXBlbiIgeDE9IjAiIHkxPSIwIiB4Mj0iMSIgeTI9IjEiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiM0ZjdjZmYiLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjOGI1Y2Y2Ii8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB4PSIzIiB5PSIzIiB3aWR0aD0iNTgiIGhlaWdodD0iNTgiIHJ4PSIxNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJ1cmwoI2J1ZGR5LXBlbikiIHN0cm9rZS13aWR0aD0iMi41IiBvcGFjaXR5PSIwLjYiLz4KICA8cGF0aCBkPSJNMTkgNDQuNSA0MC41IDIwYTQuMiA0LjIgMCAwIDEgNi4yIDUuNkwyNS40IDQ5bC04IDIuNHoiCiAgICAgICAgZmlsbD0ibm9uZSIgc3Ryb2tlPSJ1cmwoI2J1ZGR5LXBlbikiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogIDxwYXRoIGQ9Ik0zNy41IDI0LjUgNDQgMzEiIGZpbGw9Im5vbmUiIHN0cm9rZT0idXJsKCNidWRkeS1wZW4pIiBzdHJva2Utd2lkdGg9IjIuNCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+CiAgPHBhdGggZD0iTTIwIDU2LjVjNi41IDAgMTItMS42IDE2LjUtNC44IiBmaWxsPSJub25lIiBzdHJva2U9IiMyMmM1NWUiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+CiAgPHBhdGggZD0ibTM2LjggNDcuNiAzLjIgMy40IDcuMi04LjIiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzIyYzU1ZSIgc3Ryb2tlLXdpZHRoPSIzIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPC9zdmc+Cg==",
+      "metadata": {
+        "category": "coaching"
+      }
+    },
+    {
+      "name": "dsh-deepseek-meter",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "publishTimestamp": 1795499603,
+          "source": {
+            "type": "git",
+            "url": "https://github.com/evo-lee/deepseek-plugin-market",
+            "commit": "73b12f773fec95f757b42d1aeba1fcf6d2913d3c",
+            "path": "plugins/dsh-deepseek-meter"
+          }
+        }
+      ],
+      "repository": {
+        "url": "https://github.com/evo-lee/deepseek-plugin-market",
+        "directory": "plugins/dsh-deepseek-meter"
+      },
+      "title": {
+        "en": "DeepSeek balance and usage",
+        "zh": "DeepSeek 余额与用量"
+      },
+      "description": {
+        "en": "Shows your DeepSeek API wallet balance and today's token usage under the composer; click the pill to refresh.",
+        "zh": "在输入框下方显示 DeepSeek API 账户余额和今日 token 用量，点击即可刷新。"
+      },
+      "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgcm9sZT0iaW1nIiBhcmlhLWxhYmVsPSJEZWVwU2VlayBtZXRlciI+CiAgPGRlZnM+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9Im1ldGVyLXJpbmciIHgxPSIwIiB5MT0iMCIgeDI9IjEiIHkyPSIxIj4KICAgICAgPHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjMmI3ZmZmIi8+CiAgICAgIDxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iIzEyYjhhNiIvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICA8L2RlZnM+CiAgPHJlY3QgeD0iNCIgeT0iNCIgd2lkdGg9IjU2IiBoZWlnaHQ9IjU2IiByeD0iMTUiIGZpbGw9InVybCgjbWV0ZXItcmluZykiLz4KICA8cGF0aCBkPSJNMTcgNDFhMTUgMTUgMCAwIDEgMzAgMCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjQuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBvcGFjaXR5PSIwLjM1Ii8+CiAgPHBhdGggZD0iTTE3IDQxYTE1IDE1IDAgMCAxIDIxLjUtMTMuOSIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjQuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+CiAgPGNpcmNsZSBjeD0iMzIiIGN5PSI0MSIgcj0iMy40IiBmaWxsPSIjZmZmZmZmIi8+Cjwvc3ZnPgo=",
+      "metadata": {
+        "category": "observability"
+      }
+    }
+  ]
+}
